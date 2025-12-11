@@ -238,8 +238,25 @@ func (r *ReverseProxyConfigResource) ImportState(ctx context.Context, req resour
 }
 
 func (r *ReverseProxyConfigResource) deleteConfig(ctx context.Context, domain string) error {
-	// Send empty config to reset all fields
-	config := client.ReverseProxyConfig{}
+	// Send config with explicit zero values to reset all fields
+	f := false
+	s := ""
+	i := 0
+	emptySlice := []string{}
+
+	config := client.ReverseProxyConfig{
+		Websocket:          &f,
+		Gzip:               &f,
+		Brotli:             &f,
+		Aliases:            &emptySlice,
+		TrackSessions:      &f,
+		Debug:              &f,
+		Segment:            &f,
+		RedirectMode:       &s,
+		RedirectLocation:   &s,
+		RedirectStatusCode: &i,
+	}
+
 	err := r.client.UpdateReverseProxyConfig(domain, config)
 	return err
 }
@@ -291,9 +308,9 @@ func (r *ReverseProxyConfigResource) mapConfigToModel(ctx context.Context, confi
 		state.RedirectStatusCode = types.Int64Null()
 	}
 
-	if len(config.Aliases) > 0 {
-		aliases := make([]attr.Value, len(config.Aliases))
-		for i, alias := range config.Aliases {
+	if config.Aliases != nil && len(*config.Aliases) > 0 {
+		aliases := make([]attr.Value, len(*config.Aliases))
+		for i, alias := range *config.Aliases {
 			aliases[i] = types.StringValue(alias)
 		}
 		state.Aliases = types.ListValueMust(types.StringType, aliases)
@@ -347,7 +364,7 @@ func (r *ReverseProxyConfigResource) buildConfigFromModel(ctx context.Context, m
 		d := model.Aliases.ElementsAs(ctx, &aliases, false)
 		diags.Append(d...)
 		if !diags.HasError() {
-			config.Aliases = aliases
+			config.Aliases = &aliases
 		}
 	}
 

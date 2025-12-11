@@ -21,17 +21,20 @@ resource "peakhour_reverse_proxy_service" "mysite" {
 }
 
 # Configure reverse proxy
+# Note: This resource supports partial updates. Fields not specified here will retain their
+# existing values on the server. To reset a field, it must be explicitly defined.
 resource "peakhour_reverse_proxy_config" "mysite" {
   domain = peakhour_domain.mysite.name
 
   # Compression
   gzip   = true
-  brotli = true
+  # brotli = true # Commented out to demonstrate partial update - will persist previous value
 
   # WebSocket support
   websocket = true
 
   # Domain aliases
+
   aliases = [
     "www.mysite.com",
     "cdn.mysite.com"
@@ -43,6 +46,23 @@ resource "peakhour_reverse_proxy_config" "mysite" {
   # redirect_status_code = 301
 
   depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Example Firewall Rule
+resource "peakhour_rule" "block_admin" {
+  domain     = peakhour_domain.mysite.name
+  name       = "Block Admin Access"
+  phase      = "firewall"
+  filter_str = "http.request.uri.path matches \"^/admin/\""
+  enabled    = true
+
+  actions_json = jsonencode({
+    firewall = [{
+      type   = "firewall"
+      action = "deny"
+      reason = "Admin access restricted"
+    }]
+  })
 }
 
 # Add origin pool with load balancing

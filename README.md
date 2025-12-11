@@ -134,6 +134,8 @@ resource "peakhour_reverse_proxy_service" "example" {
 
 Manages Reverse Proxy configuration.
 
+**Note on Partial Updates:** This resource supports partial updates. Fields that are not specified (or set to null) in the configuration are NOT reset to defaults; they retain their existing values on the server. To reset a field to its default value, it must be explicitly defined.
+
 ```hcl
 resource "peakhour_reverse_proxy_config" "example" {
   domain    = "example.com"
@@ -432,6 +434,30 @@ resource "peakhour_transform_settings" "example" {
 - `transform_esi` (Optional, Bool) - Enable Edge Side Includes (default: false)
 - `transform_rewrite_domains` (Optional, List of String) - Domains to rewrite in content
 
+---
+
+### `peakhour_image_transform`
+
+Manages a named image transformation that can be referenced by name in image URLs.
+
+```hcl
+resource "peakhour_image_transform" "thumbnail" {
+  domain = "example.com"
+  name   = "thumbnail"
+  config_json = jsonencode({
+    width   = 200
+    height  = 200
+    fit     = "cover"
+    quality = 80
+  })
+}
+```
+
+**Arguments:**
+- `domain` (Required, String) - Domain name
+- `name` (Required, String) - Transform name (used in URLs e.g. `example.com/img.jpg?peak_transform=thumbnail`)
+- `config_json` (Required, String) - Transformation configuration JSON
+
 ## Data Sources
 
 ### `peakhour_domain`
@@ -449,6 +475,10 @@ data "peakhour_domain" "example" {
 
 **Attributes:**
 - `id` (String) - Domain identifier
+
+## API Specification
+
+For a comprehensive list of all available fields and their types, please refer to the [API Specification](docs/spec/peakhour-api-v1.json). This specification serves as the source of truth for the API.
 
 ## Development
 

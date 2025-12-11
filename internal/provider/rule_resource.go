@@ -256,7 +256,7 @@ func (r *RuleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Update rule via API
-	err := r.client.UpdateRule(plan.Domain.ValueString(), plan.Phase.ValueString(), plan.UUID.ValueString(), update)
+	err = r.client.UpdateRule(plan.Domain.ValueString(), plan.Phase.ValueString(), plan.UUID.ValueString(), update)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating rule",

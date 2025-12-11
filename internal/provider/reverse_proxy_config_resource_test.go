@@ -17,13 +17,29 @@ func TestReverseProxyConfigResource_deleteConfig_ResetsConfig(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "PATCH" && r.URL.Path == "/api/v1/domains/example.com/services/rp" {
 			called = true
-			// Check body is empty JSON object "{}"
+			// Check body contains explicit resets
 			var body map[string]interface{}
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				t.Errorf("Failed to decode body: %v", err)
 			}
-			if len(body) != 0 {
-				t.Errorf("Expected empty body, got %v", body)
+
+			// Check for presence of key 'websocket' with value false
+			if v, ok := body["websocket"]; !ok || v != false {
+				t.Errorf("Expected websocket: false, got %v", v)
+			}
+			// Check for 'aliases' with empty list
+			if v, ok := body["aliases"]; !ok {
+				t.Errorf("Expected aliases key to be present")
+			} else {
+				// json decodes empty array to []interface{}
+				list, ok := v.([]interface{})
+				if !ok || len(list) != 0 {
+					t.Errorf("Expected aliases to be [], got %v", v)
+				}
+			}
+			// Just checking a few representative fields is enough for TDD cycle
+			if v, ok := body["redirect_mode"]; !ok || v != "" {
+				t.Errorf("Expected redirect_mode: \"\", got %v", v)
 			}
 			w.WriteHeader(http.StatusOK)
 		} else {
@@ -95,5 +111,8 @@ func TestReverseProxyConfigResource_mapConfigToModel_Nulls(t *testing.T) {
 	}
 	if !model.RedirectStatusCode.IsNull() {
 		t.Errorf("Expected RedirectStatusCode to be Null, got %v", model.RedirectStatusCode)
+	}
+	if !model.Aliases.IsNull() {
+		t.Errorf("Expected Aliases to be Null, got %v", model.Aliases)
 	}
 }

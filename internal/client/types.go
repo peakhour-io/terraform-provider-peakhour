@@ -53,16 +53,16 @@ type DomainService struct {
 
 // ReverseProxy config types
 type ReverseProxyConfig struct {
-	Websocket          *bool    `json:"websocket,omitempty"`
-	Gzip               *bool    `json:"gzip,omitempty"`
-	Brotli             *bool    `json:"brotli,omitempty"`
-	Aliases            []string `json:"aliases,omitempty"`
-	TrackSessions      *bool    `json:"track_sessions,omitempty"`
-	Debug              *bool    `json:"debug,omitempty"`
-	Segment            *bool    `json:"segment,omitempty"`
-	RedirectMode       *string  `json:"redirect_mode,omitempty"`
-	RedirectLocation   *string  `json:"redirect_location,omitempty"`
-	RedirectStatusCode *int     `json:"redirect_status_code,omitempty"`
+	Websocket          *bool     `json:"websocket,omitempty"`
+	Gzip               *bool     `json:"gzip,omitempty"`
+	Brotli             *bool     `json:"brotli,omitempty"`
+	Aliases            *[]string `json:"aliases,omitempty"`
+	TrackSessions      *bool     `json:"track_sessions,omitempty"`
+	Debug              *bool     `json:"debug,omitempty"`
+	Segment            *bool     `json:"segment,omitempty"`
+	RedirectMode       *string   `json:"redirect_mode,omitempty"`
+	RedirectLocation   *string   `json:"redirect_location,omitempty"`
+	RedirectStatusCode *int      `json:"redirect_status_code,omitempty"`
 }
 
 // Transform settings types
