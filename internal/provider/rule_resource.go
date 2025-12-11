@@ -131,6 +131,14 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	// Normalize JSON to prevent spurious drift
+	normalizedJSON, err := normalizeJSON(plan.ActionsJSON.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
+		return
+	}
+	plan.ActionsJSON = types.StringValue(normalizedJSON)
+
 	// Create rule
 	ruleAdd := client.RulePhaseAdd{
 		Phase:     plan.Phase.ValueString(),
@@ -150,7 +158,8 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	// Set computed values
 	plan.UUID = types.StringValue(result.UUID)
-	plan.ID = types.StringValue(plan.Domain.ValueString() + "/" + result.UUID)
+	// ID is domain/phase/uuid
+	plan.ID = types.StringValue(fmt.Sprintf("%s/%s/%s", plan.Domain.ValueString(), plan.Phase.ValueString(), result.UUID))
 
 	// If enabled not set, default to true
 	if plan.Enabled.IsNull() {
@@ -225,6 +234,14 @@ func (r *RuleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		)
 		return
 	}
+
+	// Normalize JSON to prevent spurious drift
+	normalizedJSON, err := normalizeJSON(plan.ActionsJSON.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
+		return
+	}
+	plan.ActionsJSON = types.StringValue(normalizedJSON)
 
 	// Build update
 	name := plan.Name.ValueString()
