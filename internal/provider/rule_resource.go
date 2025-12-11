@@ -187,7 +187,11 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.Name = types.StringValue(rule.Name)
 	state.FilterStr = types.StringValue(rule.FilterStr)
 	state.Phase = types.StringValue(rule.Phase)
-	state.Enabled = types.BoolValue(rule.Enabled)
+	if rule.Enabled != nil {
+		state.Enabled = types.BoolValue(*rule.Enabled)
+	} else {
+		state.Enabled = types.BoolNull()
+	}
 
 	// Convert actions to JSON
 	actionsJSON, err := json.Marshal(rule.Actions)

@@ -258,14 +258,38 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 				"websocket": true,
 			})
 		case "/api/v1/domains/example.com/image-transforms":
-			if r.Method != "GET" {
-				t.Errorf("Expected GET for image transforms")
+			if r.Method == "GET" {
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"presets": []map[string]interface{}{
+						{"uuid": "preset-1", "name": "Optimise"},
+					},
+				})
+			} else if r.Method == "POST" {
+				// Create
+				var body ImageTransformPresetCreate
+				json.NewDecoder(r.Body).Decode(&body)
+				if body.Name != "NewPreset" {
+					t.Errorf("Expected Name NewPreset, got %s", body.Name)
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"uuid":   "preset-new",
+					"name":   body.Name,
+					"config": body.Config,
+				})
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"presets": []map[string]interface{}{
-					{"uuid": "preset-1", "name": "Optimise"},
-				},
-			})
+		case "/api/v1/domains/example.com/image-transforms/preset-1":
+			if r.Method == "DELETE" {
+				w.WriteHeader(http.StatusNoContent)
+			} else if r.Method == "POST" {
+				// Update
+				var body ImageTransformPresetUpdate
+				json.NewDecoder(r.Body).Decode(&body)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"uuid":   "preset-1",
+					"name":   "Optimise",
+					"config": body.Config,
+				})
+			}
 		case "/api/v1/domains/example.com/image-transforms/config/commit":
 			if r.Method != "POST" {
 				t.Errorf("Expected POST for image transforms commit")
@@ -296,6 +320,35 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 	}
 	if len(presets) != 1 || presets[0].Name != "Optimise" {
 		t.Error("Expected 1 preset with name Optimise")
+	}
+
+	// Test CreateImageTransformPreset
+	newPreset, err := client.CreateImageTransformPreset("example.com", ImageTransformPresetCreate{
+		Name:   "NewPreset",
+		Config: map[string]interface{}{"width": 100},
+	})
+	if err != nil {
+		t.Fatalf("CreateImageTransformPreset failed: %v", err)
+	}
+	if newPreset.UUID != "preset-new" {
+		t.Error("Expected new UUID preset-new")
+	}
+
+	// Test UpdateImageTransformPreset
+	updatedPreset, err := client.UpdateImageTransformPreset("example.com", "preset-1", ImageTransformPresetUpdate{
+		Config: map[string]interface{}{"width": 200},
+	})
+	if err != nil {
+		t.Fatalf("UpdateImageTransformPreset failed: %v", err)
+	}
+	if updatedPreset.Name != "Optimise" {
+		t.Error("Expected name Optimise")
+	}
+
+	// Test DeleteImageTransformPreset
+	err = client.DeleteImageTransformPreset("example.com", "preset-1")
+	if err != nil {
+		t.Fatalf("DeleteImageTransformPreset failed: %v", err)
 	}
 
 	// Test CommitImageTransforms

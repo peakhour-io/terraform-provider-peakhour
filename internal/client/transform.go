@@ -61,3 +61,18 @@ func (c *Client) DeleteImageTransformPreset(domainName, presetUUID string) error
 func (c *Client) CommitImageTransforms(domainName string) error {
 	return c.Post(fmt.Sprintf("/api/v1/domains/%s/image-transforms/config/commit", domainName), nil, nil)
 }
+
+// GetTransformSettings retrieves transform settings
+func (c *Client) GetTransformSettings(domainName string) (*TransformSettings, error) {
+	var result TransformSettings
+	err := c.Get(fmt.Sprintf("/api/v1/domains/%s/services/rp/transforms", domainName), &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// UpdateTransformSettings updates transform settings
+func (c *Client) UpdateTransformSettings(domainName string, settings TransformSettings) error {
+	return c.Patch(fmt.Sprintf("/api/v1/domains/%s/services/rp/transforms", domainName), settings)
+}

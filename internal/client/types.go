@@ -85,7 +85,7 @@ type TransformSettings struct {
 type RulePhase struct {
 	UUID      string                      `json:"uuid"`
 	Pos       int                         `json:"pos"`
-	Enabled   bool                        `json:"enabled"`
+	Enabled   *bool                       `json:"enabled"`
 	Name      string                      `json:"name"`
 	FilterStr string                      `json:"filter_str"`
 	Phase     string                      `json:"phase"`
@@ -98,7 +98,7 @@ type RulePhaseSummary struct {
 	UUID      string `json:"uuid"`
 	Pos       int    `json:"pos"`
 	Phase     string `json:"phase"`
-	Enabled   bool   `json:"enabled"`
+	Enabled   *bool  `json:"enabled"`
 }
 
 type RulePhaseAdd struct {
