@@ -203,6 +203,10 @@ func (r *TransformSettingsResource) Read(ctx context.Context, req resource.ReadR
 	// Get settings from API
 	settings, err := r.client.GetTransformSettings(state.Domain.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading transform settings",
 			"Could not read settings for domain "+state.Domain.ValueString()+": "+err.Error(),

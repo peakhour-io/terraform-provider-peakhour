@@ -28,14 +28,14 @@ type OriginPoolResource struct {
 }
 
 type OriginPoolResourceModel struct {
-	ID                            types.String `tfsdk:"id"`
-	Domain                        types.String `tfsdk:"domain"`
-	Tag                           types.String `tfsdk:"tag"`
-	Addresses                     types.List   `tfsdk:"address"`
-	ShieldName                    types.String `tfsdk:"shield_name"`
-	LoadBalancingMode             types.String `tfsdk:"load_balancing_mode"`
-	LoadBalancingKey              types.String `tfsdk:"load_balancing_key"`
-	LoadBalancingOverloadPercent  types.Int64  `tfsdk:"load_balancing_overload_percent"`
+	ID                           types.String `tfsdk:"id"`
+	Domain                       types.String `tfsdk:"domain"`
+	Tag                          types.String `tfsdk:"tag"`
+	Addresses                    types.List   `tfsdk:"address"`
+	ShieldName                   types.String `tfsdk:"shield_name"`
+	LoadBalancingMode            types.String `tfsdk:"load_balancing_mode"`
+	LoadBalancingKey             types.String `tfsdk:"load_balancing_key"`
+	LoadBalancingOverloadPercent types.Int64  `tfsdk:"load_balancing_overload_percent"`
 }
 
 type OriginAddressModel struct {
@@ -57,7 +57,7 @@ func (r *OriginPoolResource) Schema(ctx context.Context, req resource.SchemaRequ
 		Description: "Manages an origin pool for a domain.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Origin pool identifier.",
+				Description: "Origin pool identifier (domain/origins/tag).",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -172,6 +172,10 @@ func (r *OriginPoolResource) Read(ctx context.Context, req resource.ReadRequest,
 	// Get pool from API
 	pool, err := r.client.GetOriginPool(state.Domain.ValueString(), state.Tag.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading origin pool",
 			"Could not read pool "+state.Tag.ValueString()+" for domain "+state.Domain.ValueString()+": "+err.Error(),
@@ -273,8 +277,26 @@ func (r *OriginPoolResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 func (r *OriginPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import format: domain/tag
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// Import format: domain/origins/tag
+	parts, err := parseCompositeID(req.ID, 3)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected import ID format 'domain/origins/tag', got %q: %s", req.ID, err),
+		)
+		return
+	}
+	if parts[1] != "origins" {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected import ID format 'domain/origins/tag', got %q: middle segment must be 'origins'", req.ID),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("domain"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("tag"), parts[2])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 func (r *OriginPoolResource) buildPoolFromModel(ctx context.Context, model *OriginPoolResourceModel, diags *diag.Diagnostics) client.OriginPool {

@@ -112,6 +112,10 @@ func (r *DomainResource) Read(ctx context.Context, req resource.ReadRequest, res
 	// Get domain from API
 	domain, err := r.client.GetDomain(state.Name.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading domain",
 			"Could not read domain "+state.Name.ValueString()+": "+err.Error(),

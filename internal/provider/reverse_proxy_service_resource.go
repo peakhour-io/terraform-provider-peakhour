@@ -111,6 +111,10 @@ func (r *ReverseProxyServiceResource) Read(ctx context.Context, req resource.Rea
 	// Check if service exists
 	err := r.client.GetDomainService(state.Domain.ValueString(), "rp")
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading reverse proxy service",
 			"Could not read service for domain "+state.Domain.ValueString()+": "+err.Error(),

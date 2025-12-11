@@ -161,6 +161,10 @@ func (r *RateLimitZoneResource) Read(ctx context.Context, req resource.ReadReque
 	// Get zone from API
 	zone, err := r.client.GetRateLimitZone(state.Domain.ValueString(), state.Name.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading rate limit zone",
 			"Could not read zone "+state.Name.ValueString()+" for domain "+state.Domain.ValueString()+": "+err.Error(),

@@ -176,6 +176,10 @@ func (r *ReverseProxyConfigResource) Read(ctx context.Context, req resource.Read
 	// Get config from API
 	config, err := r.client.GetReverseProxyConfig(state.Domain.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading reverse proxy configuration",
 			"Could not read config for domain "+state.Domain.ValueString()+": "+err.Error(),

@@ -164,6 +164,10 @@ func (r *RuleListResource) Read(ctx context.Context, req resource.ReadRequest, r
 	// Get list from API
 	list, err := r.client.GetRuleList(state.Domain.ValueString(), state.UUID.ValueString())
 	if err != nil {
+		if client.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading rule list",
 			"Could not read list "+state.UUID.ValueString()+" for domain "+state.Domain.ValueString()+": "+err.Error(),
@@ -261,7 +265,18 @@ func (r *RuleListResource) Delete(ctx context.Context, req resource.DeleteReques
 
 func (r *RuleListResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import format: domain/uuid
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	parts, err := parseCompositeID(req.ID, 2)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected import ID format 'domain/uuid', got %q: %s", req.ID, err),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("domain"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("uuid"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 func (r *RuleListResource) buildListFromModel(ctx context.Context, model *RuleListResourceModel, diags *diag.Diagnostics) client.RuleListAdd {
