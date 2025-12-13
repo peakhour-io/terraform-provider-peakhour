@@ -20,8 +20,10 @@ type InventoryClient interface {
 	GetReverseProxyConfig(domainName string) (*client.ReverseProxyConfig, error)
 	GetRPSettings(domainName string) (*client.ServiceSettings, error)
 	GetRPSSLConfig(domainName string) (*client.SSLConfig, error)
+	GetRPSSLCertificate(domainName string) (*client.SSLCertificate, error)
 	GetTransformSettings(domainName string) (*client.TransformSettings, error)
 	GetAcmeSettings(domainName string) (*client.AcmeSettings, error)
+	GetAcmeCertificate(domainName string) (*client.AcmeCertificate, error)
 	GetRateLimit(domainName string) (*client.RateLimit, error)
 	ListRateLimitZones(domainName string) ([]client.RateLimitZone, error)
 	GetOriginPools(domainName string) ([]client.OriginPool, error)
@@ -77,6 +79,14 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_ssl_config", Name: "ssl", ImportID: domain})
 	}
 
+	if _, err := c.GetRPSSLCertificate(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_ssl_certificate", Name: "ssl_certificate", ImportID: domain})
+	}
+
 	if _, err := c.GetTransformSettings(domain); err != nil {
 		if !client.IsNotFoundError(err) {
 			return nil, err
@@ -91,6 +101,14 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_acme_settings", Name: "acme", ImportID: domain})
+	}
+
+	if _, err := c.GetAcmeCertificate(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_acme_certificate", Name: "acme_certificate", ImportID: domain})
 	}
 
 	if _, err := c.GetRateLimit(domain); err != nil {

@@ -14,8 +14,10 @@ type fakeInventoryClient struct {
 	reverseProxyConfig *client.ReverseProxyConfig
 	rpSettings         *client.ServiceSettings
 	rpSSLConfig        *client.SSLConfig
+	rpSSLCertificate   *client.SSLCertificate
 	transformSettings  *client.TransformSettings
 	acmeSettings       *client.AcmeSettings
+	acmeCertificate    *client.AcmeCertificate
 	rateLimit          *client.RateLimit
 
 	rateLimitZones    []client.RateLimitZone
@@ -51,12 +53,20 @@ func (f *fakeInventoryClient) GetRPSSLConfig(domainName string) (*client.SSLConf
 	return f.rpSSLConfig, nil
 }
 
+func (f *fakeInventoryClient) GetRPSSLCertificate(domainName string) (*client.SSLCertificate, error) {
+	return f.rpSSLCertificate, nil
+}
+
 func (f *fakeInventoryClient) GetTransformSettings(domainName string) (*client.TransformSettings, error) {
 	return f.transformSettings, nil
 }
 
 func (f *fakeInventoryClient) GetAcmeSettings(domainName string) (*client.AcmeSettings, error) {
 	return f.acmeSettings, nil
+}
+
+func (f *fakeInventoryClient) GetAcmeCertificate(domainName string) (*client.AcmeCertificate, error) {
+	return f.acmeCertificate, nil
 }
 
 func (f *fakeInventoryClient) GetRateLimit(domainName string) (*client.RateLimit, error) {
@@ -120,8 +130,10 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		reverseProxyConfig: &client.ReverseProxyConfig{},
 		rpSettings:         &client.ServiceSettings{},
 		rpSSLConfig:        &client.SSLConfig{},
+		rpSSLCertificate:   &client.SSLCertificate{},
 		transformSettings:  &client.TransformSettings{},
 		acmeSettings:       &client.AcmeSettings{},
+		acmeCertificate:    &client.AcmeCertificate{},
 		rateLimit:          &client.RateLimit{},
 		rateLimitZones: []client.RateLimitZone{
 			{Name: "zone-b"},
@@ -168,6 +180,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 	}
 
 	want := []ImportTarget{
+		{TypeName: "peakhour_acme_certificate", Name: "acme_certificate", ImportID: "example.com"},
 		{TypeName: "peakhour_acme_settings", Name: "acme", ImportID: "example.com"},
 		{TypeName: "peakhour_bulk_redirect_entry", Name: "br-1_entry-1", ImportID: "example.com/bulk_redirects/br-1/entries/entry-1"},
 		{TypeName: "peakhour_bulk_redirect_entry", Name: "br-1_entry-2", ImportID: "example.com/bulk_redirects/br-1/entries/entry-2"},
@@ -190,6 +203,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_lua_options", Name: "lua", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_origin_config", Name: "origin", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_settings", Name: "settings", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_ssl_certificate", Name: "ssl_certificate", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_ssl_config", Name: "ssl", ImportID: "example.com"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
