@@ -61,4 +61,3 @@ func TestClient_ListDomains(t *testing.T) {
 		t.Fatalf("ListDomains returned %v, want %v", got, want)
 	}
 }
-

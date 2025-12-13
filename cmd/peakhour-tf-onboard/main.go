@@ -154,4 +154,3 @@ func writeDomain(ctx context.Context, c *client.Client, outDir, domain string) e
 	}
 	return nil
 }
-

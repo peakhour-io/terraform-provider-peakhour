@@ -138,4 +138,3 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		t.Fatalf("CollectDomainInventory mismatch (-want +got):\n%s", diff)
 	}
 }
-

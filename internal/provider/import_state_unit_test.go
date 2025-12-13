@@ -43,9 +43,9 @@ func TestAccImportState_RateLimitZone_ParsesDomainAndName(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testUnitRateLimitZoneConfig(),
-				ResourceName: "peakhour_rate_limit_zone.test",
-				ImportState:  true,
+				Config:        testUnitRateLimitZoneConfig(),
+				ResourceName:  "peakhour_rate_limit_zone.test",
+				ImportState:   true,
 				ImportStateId: "example.com/my-zone",
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					for _, st := range states {

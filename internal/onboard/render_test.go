@@ -41,4 +41,3 @@ func TestRenderImportsTF_Golden(t *testing.T) {
 		t.Fatalf("RenderImportsTF mismatch (-want +got):\n%s", diff)
 	}
 }
-
