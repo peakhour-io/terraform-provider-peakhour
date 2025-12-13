@@ -38,6 +38,26 @@ Rules execute in specific phases during request processing:
 | `response_headers` | Before sending to client | Modify headers sent to client |
 | `bulk_redirect` | Redirect processing | Bulk URL redirects |
 
+## Rule Ordering
+
+Rules within a phase are evaluated in order. To manage ordering, use `peakhour_rule_phase_order`:
+
+```hcl
+resource "peakhour_rule_phase_order" "firewall" {
+  domain = "example.com"
+  phase  = "firewall"
+
+  # By default, this expects the full order for the phase and will detect
+  # out-of-band rule additions/removals as drift.
+  # To manage only the relative order of the listed rules, set:
+  # include_all_rules = false
+  order = [
+    peakhour_rule.block_admin.uuid,
+    peakhour_rule.challenge_bots.uuid,
+  ]
+}
+```
+
 ## Filter Syntax (Wirefilter)
 
 Filters use Wirefilter syntax to match requests:

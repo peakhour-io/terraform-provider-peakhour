@@ -61,6 +61,10 @@ Optional: override API endpoint via environment variable:
 export PEAKHOUR_BASE_URL="https://console.staging.peakhour.io"
 ```
 
+## API Errors
+
+When the Peakhour API returns an error (validation, permission issues, etc.), Terraform will fail the operation and surface the API status code plus the error message. If the API returns a JSON body like `{"error":"..."}`, the provider extracts the `error` field; otherwise it includes the raw response body.
+
 ## Usage
 
 ### Basic Example
@@ -98,8 +102,11 @@ See [examples/full-setup/main.tf](examples/full-setup/main.tf) for a complete ex
 - Domain creation
 - Service enablement
 - Reverse proxy configuration (compression, WebSocket, aliases)
+- TLS/ACME certificate configuration
 - Origin pools with load balancing
 - Transform settings (image optimization, HTML processing)
+
+See [examples/tls-acme/main.tf](examples/tls-acme/main.tf) for a focused TLS/ACME example.
 
 ## Onboarding Existing Config (Many Domains)
 
@@ -187,7 +194,7 @@ resource "peakhour_rp_settings" "example" {
 }
 ```
 
-See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+See [examples/tls-acme/main.tf](examples/tls-acme/main.tf).
 
 ---
 
@@ -221,6 +228,8 @@ resource "peakhour_rp_ssl_certificate" "example" {
 }
 ```
 
+See [examples/tls-acme/main.tf](examples/tls-acme/main.tf).
+
 ---
 
 ### `peakhour_acme_settings`
@@ -238,7 +247,7 @@ resource "peakhour_acme_settings" "example" {
 }
 ```
 
-See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+See [examples/tls-acme/main.tf](examples/tls-acme/main.tf).
 
 ---
 
@@ -254,6 +263,8 @@ resource "peakhour_acme_certificate" "example" {
   # issue = true
 }
 ```
+
+See [examples/tls-acme/main.tf](examples/tls-acme/main.tf).
 
 ---
 
@@ -638,6 +649,27 @@ resource "peakhour_rule" "block_admin" {
 - `redirect` - Redirect using bulk redirect list
 
 See [examples/rules/main.tf](examples/rules/main.tf) and [RULES_GUIDE.md](RULES_GUIDE.md) for detailed examples.
+
+---
+
+### `peakhour_rule_phase_order`
+
+Manages the order of rules within a phase.
+
+```hcl
+resource "peakhour_rule_phase_order" "firewall" {
+  domain = "example.com"
+  phase  = "firewall"
+
+  # Full order for the phase (default: include_all_rules=true)
+  order = [
+    peakhour_rule.block_admin.uuid,
+    peakhour_rule.challenge_bots.uuid,
+  ]
+}
+```
+
+See [examples/rules/main.tf](examples/rules/main.tf).
 
 ---
 

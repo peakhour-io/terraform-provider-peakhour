@@ -296,6 +296,31 @@ resource "peakhour_rule" "cache_tags" {
   depends_on = [peakhour_reverse_proxy_service.example]
 }
 
+# Example 9: Order rules within a phase
+#
+# By default, peakhour_rule_phase_order expects the full order for the phase
+# (it will detect out-of-band rule additions/removals as drift).
+# To manage only the relative order of the listed rules, set include_all_rules=false.
+resource "peakhour_rule_phase_order" "firewall" {
+  domain = peakhour_domain.example.name
+  phase  = "firewall"
+
+  order = [
+    peakhour_rule.block_admin.uuid,
+    peakhour_rule.challenge_bots.uuid,
+  ]
+}
+
+resource "peakhour_rule_phase_order" "url_config" {
+  domain = peakhour_domain.example.name
+  phase  = "url_config"
+
+  order = [
+    peakhour_rule.cache_images.uuid,
+    peakhour_rule.cache_tags.uuid,
+  ]
+}
+
 output "firewall_rule_uuid" {
   value       = peakhour_rule.block_admin.uuid
   description = "UUID of the firewall rule"
