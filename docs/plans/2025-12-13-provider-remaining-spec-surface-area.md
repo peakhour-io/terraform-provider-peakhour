@@ -9,7 +9,9 @@ Completed from this plan (merged):
   - `peakhour_rate_limit_settings`
   - `peakhour_rp_settings`
   - `peakhour_rp_ssl_config`
+  - `peakhour_rp_ssl_certificate`
   - `peakhour_acme_settings`
+  - `peakhour_acme_certificate`
   - `peakhour_rp_origin_config`
   - `peakhour_rp_cdn_cache`
   - `peakhour_rp_bots`
@@ -28,6 +30,7 @@ The provider currently models these API areas:
 - RP config (incl “vhost aliases”): `peakhour_reverse_proxy_config` (maps `ReverseProxyConfig.aliases`)
 - RP settings: `peakhour_rp_settings` (`/services/rp/settings`)
 - RP SSL/TLS cipher profile: `peakhour_rp_ssl_config` (`/services/rp/ssl`)
+- RP SSL/TLS certificate upload + info: `peakhour_rp_ssl_certificate` (`/services/rp/ssl/certificate`)
 - Origin pools: `peakhour_origin_pool` (`/api/v1/domains/{domain}/origins`)
 - Origin behavior: `peakhour_rp_origin_config` (`/services/rp/origin`)
 - CDN cache config: `peakhour_rp_cdn_cache` (`/services/rp/cdn`)
@@ -39,6 +42,7 @@ The provider currently models these API areas:
 - Rules + lists + bulk redirects: `peakhour_rule`, `peakhour_rule_list`, `peakhour_bulk_redirect_list`, `peakhour_bulk_redirect_entry`
 - Rate limiting: `peakhour_rate_limit_settings`, `peakhour_rate_limit_global`, `peakhour_rate_limit_zone`
 - ACME settings: `peakhour_acme_settings` (`/services/acme/settings`)
+- ACME certificate status/issue trigger: `peakhour_acme_certificate` (`/services/acme/certificate`)
 - Image transforms (presets): `peakhour_image_transform`
 
 ## “Vhost settings” in the spec
@@ -53,11 +57,11 @@ What looks “vhost-ish” is split across:
 
 ### TLS / SSL and ACME (partial)
 - ✅ SSL config: `GET/PUT /api/v1/domains/{domain}/services/rp/ssl` (`peakhour_rp_ssl_config`)
-- ❌ SSL certificate: `GET/PUT /api/v1/domains/{domain}/services/rp/ssl/certificate` (not implemented)
+- ✅ SSL certificate: `GET/PUT /api/v1/domains/{domain}/services/rp/ssl/certificate` (`peakhour_rp_ssl_certificate`)
 - ✅ ACME settings: `GET/PUT /api/v1/domains/{domain}/services/acme/settings` (`peakhour_acme_settings`)
-- ❌ ACME certificate status/contents + issuance trigger: `GET/POST /api/v1/domains/{domain}/services/acme/certificate` (not implemented)
+- ✅ ACME certificate status/contents + issuance trigger: `GET/POST /api/v1/domains/{domain}/services/acme/certificate` (`peakhour_acme_certificate`)
 
-**Terraform design note:** `SSLCertificateAdd.private_key` is write-only in practice (API does not return it). If modeled as an attribute, it will end up in Terraform state (even if marked sensitive). Consider prioritizing ACME resources first if you want to avoid private key material in state.
+**Terraform design note:** `SSLCertificateAdd.private_key` is write-only in practice (API does not return it). If you use `peakhour_rp_ssl_certificate`, the private key is stored in Terraform state (marked sensitive) and drift cannot be automatically verified.
 
 ### Reverse proxy service settings (done)
 - ✅ `GET/PATCH /api/v1/domains/{domain}/services/rp/settings` (`peakhour_rp_settings`)
@@ -99,20 +103,17 @@ What looks “vhost-ish” is split across:
 
 - **Omit vs clear matters**: many endpoints accept `null` to clear values; for PATCH/POST-based config we used `map[string]any` to preserve the distinction between “unset” and “explicitly null”.
 - **Some config is not readable**: `/services/rp/firewall/error_page` indicates whether a page exists, but doesn’t return the content; Terraform can’t auto-verify drift of `content`.
+- **Some secrets are write-only**: `/services/rp/ssl/certificate` does not return uploaded PEM/key material; Terraform can store what you upload, but cannot validate drift.
 - **Spec-required-but-nullable fields**: `LuaOptions` fields are required by the schema but can be `null`; we send a full object (including `null` values) to satisfy “required” without forcing defaults.
 - **Go toolchain**: the repo requires Go 1.22; `go.mod` must use `go 1.22` (not `go 1.22.0`) and local tests should run with the pinned toolchain in `.toolchains/go1.22.10/bin/go` (or any Go 1.22+).
 
 ## Proposed next implementation order (remaining)
 
-1. **ACME certificate status/issue**
-   - New: `peakhour_acme_certificate` (read current status/expiry; optional “issue” action)
-2. **SSL certificate upload**
-   - Optional: `peakhour_rp_ssl_certificate` (but decide up-front how you want to handle private key material in Terraform state)
-3. **Cache purge/flush actions**
+1. **Cache purge/flush actions**
    - If desired, model as explicit “run once” resources (not normal config) or keep outside Terraform.
-4. **Threats lists**
+2. **Threats lists**
    - New resources for access list and block list.
-5. **WAF suite**
+3. **WAF suite**
    - Multiple resources + reorder operations; biggest effort.
 
 For each new area:

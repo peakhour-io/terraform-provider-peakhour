@@ -79,6 +79,27 @@ resource "peakhour_acme_settings" "mysite" {
   depends_on = [peakhour_reverse_proxy_service.mysite]
 }
 
+# ACME certificate status (and optional issuance trigger)
+resource "peakhour_acme_certificate" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  # Optional: toggle to trigger issuance (async)
+  # issue = true
+
+  depends_on = [peakhour_acme_settings.mysite]
+}
+
+# Optional: upload a custom certificate/private key instead of ACME.
+# WARNING: private key material is stored in Terraform state (sensitive).
+# resource "peakhour_rp_ssl_certificate" "mysite" {
+#   domain = peakhour_domain.mysite.name
+#
+#   certificate_pem = file("cert.pem")
+#   private_key_pem = file("key.pem")
+#
+#   depends_on = [peakhour_reverse_proxy_service.mysite]
+# }
+
 # Origin behavior settings (distinct from origin pools)
 resource "peakhour_rp_origin_config" "mysite" {
   domain = peakhour_domain.mysite.name

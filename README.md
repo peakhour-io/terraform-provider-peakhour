@@ -206,6 +206,23 @@ See [examples/full-setup/main.tf](examples/full-setup/main.tf).
 
 ---
 
+### `peakhour_rp_ssl_certificate`
+
+Uploads a custom SSL certificate and private key.
+
+**Important:** The API does not return the uploaded private key (or certificate PEM), so Terraform cannot automatically verify drift of `certificate_pem`/`private_key_pem`. The private key is stored in Terraform state (marked sensitive). Prefer ACME when possible.
+
+```hcl
+resource "peakhour_rp_ssl_certificate" "example" {
+  domain = "example.com"
+
+  certificate_pem = file("cert.pem")
+  private_key_pem = file("key.pem")
+}
+```
+
+---
+
 ### `peakhour_acme_settings`
 
 Manages ACME settings (hostnames/SANs) for a domain.
@@ -222,6 +239,21 @@ resource "peakhour_acme_settings" "example" {
 ```
 
 See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_acme_certificate`
+
+Reads ACME certificate status and can optionally trigger issuance (async).
+
+```hcl
+resource "peakhour_acme_certificate" "example" {
+  domain = "example.com"
+
+  # Optional: toggle to trigger issuance
+  # issue = true
+}
+```
 
 ---
 
