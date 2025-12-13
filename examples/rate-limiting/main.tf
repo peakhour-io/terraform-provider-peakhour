@@ -19,6 +19,14 @@ resource "peakhour_reverse_proxy_service" "example" {
   domain = peakhour_domain.example.name
 }
 
+# Enable rate limiting modes for this domain
+resource "peakhour_rate_limit_settings" "example" {
+  domain = peakhour_domain.example.name
+  mode   = ["zone", "global"]
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
 # Example 1: Create rate limit zone for API endpoints
 resource "peakhour_rate_limit_zone" "api_zone" {
   domain = peakhour_domain.example.name

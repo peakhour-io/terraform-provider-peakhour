@@ -48,6 +48,103 @@ resource "peakhour_reverse_proxy_config" "mysite" {
   depends_on = [peakhour_reverse_proxy_service.mysite]
 }
 
+# RP service settings (notifications, quickstart, computed addresses)
+resource "peakhour_rp_settings" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  notification_emails = ["ops@mysite.com"]
+  quickstart          = true
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# SSL/TLS cipher profile
+resource "peakhour_rp_ssl_config" "mysite" {
+  domain  = peakhour_domain.mysite.name
+  ciphers = "intermediate"
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# ACME settings (for managed certificates)
+resource "peakhour_acme_settings" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  # Add SANs/hostnames you want on the ACME certificate.
+  domain_names = [
+    peakhour_domain.mysite.name,
+    "www.mysite.com",
+  ]
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Origin behavior settings (distinct from origin pools)
+resource "peakhour_rp_origin_config" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  ssl_mode = "https"
+
+  origin_request_headers = {
+    geoip = true
+  }
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# CDN cache settings
+resource "peakhour_rp_cdn_cache" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  cache_enabled = true
+  cdn_query_mode = "full"
+
+  cdn_remove_query_args = ["utm_source", "utm_medium"]
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Bots settings
+resource "peakhour_rp_bots" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  bots_verify_list = ["google", "bing"]
+  bots_verify_rdns = true
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Firewall settings
+resource "peakhour_rp_firewall_settings" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  challenge_cookie_key = ["fingerprint_tls", "ip"]
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Custom firewall error page
+resource "peakhour_rp_firewall_error_page" "mysite" {
+  domain = peakhour_domain.mysite.name
+
+  content = <<-EOT
+  <html>
+    <head><title>Access denied</title></head>
+    <body><h1>Access denied</h1></body>
+  </html>
+  EOT
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
+# Lua options (advanced)
+resource "peakhour_rp_lua_options" "mysite" {
+  domain      = peakhour_domain.mysite.name
+  lua_enabled = false
+
+  depends_on = [peakhour_reverse_proxy_service.mysite]
+}
+
 # Example Firewall Rule
 resource "peakhour_rule" "block_admin" {
   domain     = peakhour_domain.mysite.name

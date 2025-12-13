@@ -174,6 +174,156 @@ resource "peakhour_reverse_proxy_config" "example" {
 
 ---
 
+### `peakhour_rp_settings`
+
+Manages Reverse Proxy service settings (notifications, quickstart, computed addresses).
+
+```hcl
+resource "peakhour_rp_settings" "example" {
+  domain = "example.com"
+
+  notification_emails = ["ops@example.com"]
+  quickstart          = true
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_ssl_config`
+
+Manages the SSL/TLS cipher profile.
+
+```hcl
+resource "peakhour_rp_ssl_config" "example" {
+  domain  = "example.com"
+  ciphers = "intermediate"
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_acme_settings`
+
+Manages ACME settings (hostnames/SANs) for a domain.
+
+```hcl
+resource "peakhour_acme_settings" "example" {
+  domain = "example.com"
+
+  domain_names = [
+    "example.com",
+    "www.example.com",
+  ]
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_origin_config`
+
+Manages RP origin behavior settings (distinct from origin pools).
+
+```hcl
+resource "peakhour_rp_origin_config" "example" {
+  domain   = "example.com"
+  ssl_mode = "https"
+
+  origin_request_headers = {
+    geoip = true
+  }
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_cdn_cache`
+
+Manages CDN caching settings.
+
+```hcl
+resource "peakhour_rp_cdn_cache" "example" {
+  domain        = "example.com"
+  cache_enabled = true
+  cdn_query_mode = "full"
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_bots`
+
+Manages bots verification settings.
+
+```hcl
+resource "peakhour_rp_bots" "example" {
+  domain = "example.com"
+
+  bots_verify_list = ["google", "bing"]
+  bots_verify_rdns = true
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_firewall_settings`
+
+Manages firewall settings such as challenge cookie key configuration.
+
+```hcl
+resource "peakhour_rp_firewall_settings" "example" {
+  domain = "example.com"
+
+  challenge_cookie_key = ["fingerprint_tls", "ip"]
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_firewall_error_page`
+
+Uploads a custom firewall error page. Note: the API does not return the configured content (only whether a page exists), so Terraform cannot detect drift of the content.
+
+```hcl
+resource "peakhour_rp_firewall_error_page" "example" {
+  domain = "example.com"
+
+  content = "<html><body><h1>Access denied</h1></body></html>"
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_lua_options`
+
+Manages Lua settings.
+
+```hcl
+resource "peakhour_rp_lua_options" "example" {
+  domain      = "example.com"
+  lua_enabled = false
+}
+```
+
+See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
 ### `peakhour_origin_pool`
 
 Manages an origin pool (backend servers).
@@ -327,6 +477,21 @@ resource "peakhour_bulk_redirect_entry" "home" {
 
 **Attributes:**
 - `entry_id` (String) - Entry identifier (computed)
+
+---
+
+### `peakhour_rate_limit_settings`
+
+Manages rate limit mode settings for a domain (enables/disables global/vhost/zone rate limiting).
+
+```hcl
+resource "peakhour_rate_limit_settings" "example" {
+  domain = "example.com"
+  mode   = ["zone", "global"]
+}
+```
+
+See [examples/rate-limiting/main.tf](examples/rate-limiting/main.tf).
 
 ---
 
