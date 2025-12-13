@@ -2,8 +2,6 @@ module github.com/peakhour-io/terraform-provider-peakhour
 
 go 1.22.0
 
-toolchain go1.22.10
-
 require github.com/hashicorp/terraform-plugin-framework v1.12.0
 
 require (
