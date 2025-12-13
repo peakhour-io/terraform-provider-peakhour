@@ -125,6 +125,22 @@ func TestProviderResources_IncludeBulkRedirectResources(t *testing.T) {
 	}
 }
 
+func TestProviderResources_IncludeRulePhaseOrder(t *testing.T) {
+	p := provider.New("test")()
+
+	names := map[string]struct{}{}
+	for _, factory := range p.Resources(context.Background()) {
+		res := factory()
+		var resp resource.MetadataResponse
+		res.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "peakhour"}, &resp)
+		names[resp.TypeName] = struct{}{}
+	}
+
+	if _, ok := names["peakhour_rule_phase_order"]; !ok {
+		t.Fatalf("provider should register peakhour_rule_phase_order resource, got %v", sortedKeys(names))
+	}
+}
+
 func TestProviderResources_IncludeConfigBacklogResources(t *testing.T) {
 	p := provider.New("test")()
 
@@ -240,6 +256,15 @@ func TestSpecContract_ConfigPathsExist(t *testing.T) {
 		if _, ok := spec.Paths[path]; !ok {
 			t.Fatalf("spec missing path %q", path)
 		}
+	}
+}
+
+func TestSpecContract_RulePhaseReorderPathExists(t *testing.T) {
+	spec := loadSpec(t)
+
+	path := "/api/v1/domains/{domain}/services/rp/rules/phases/{phase}/reorder"
+	if _, ok := spec.Paths[path]; !ok {
+		t.Fatalf("spec missing path %q", path)
 	}
 }
 

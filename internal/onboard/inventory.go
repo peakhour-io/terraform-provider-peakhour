@@ -319,11 +319,11 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		"response_headers",
 		"load_balance",
 		"bulk_redirect",
-	} {
-		rules, err := c.ListRulesInPhase(domain, phase)
-		if err != nil {
-			if client.IsNotFoundError(err) {
-				continue
+		} {
+			rules, err := c.ListRulesInPhase(domain, phase)
+			if err != nil {
+				if client.IsNotFoundError(err) {
+					continue
 			}
 			return nil, err
 		}
@@ -334,10 +334,18 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 			targets = append(targets, ImportTarget{
 				TypeName: "peakhour_rule",
 				Name:     fmt.Sprintf("%s_%s", phase, r.UUID),
-				ImportID: fmt.Sprintf("%s/%s/%s", domain, phase, r.UUID),
-			})
+					ImportID: fmt.Sprintf("%s/%s/%s", domain, phase, r.UUID),
+				})
+			}
+
+			if len(rules) > 0 {
+				targets = append(targets, ImportTarget{
+					TypeName: "peakhour_rule_phase_order",
+					Name:     phase,
+					ImportID: fmt.Sprintf("%s/%s", domain, phase),
+				})
+			}
 		}
-	}
 
 	if presets, err := c.ListImageTransformPresets(domain); err != nil {
 		if !client.IsNotFoundError(err) {

@@ -268,6 +268,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
 		{TypeName: "peakhour_rule_list", Name: "list-1", ImportID: "example.com/list-1"},
 		{TypeName: "peakhour_rule_list", Name: "list-2", ImportID: "example.com/list-2"},
+		{TypeName: "peakhour_rule_phase_order", Name: "firewall", ImportID: "example.com/firewall"},
 		{TypeName: "peakhour_transform_settings", Name: "transforms", ImportID: "example.com"},
 	}
 

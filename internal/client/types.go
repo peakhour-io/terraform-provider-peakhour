@@ -119,6 +119,10 @@ type RulePhaseUpdate struct {
 	Actions   map[string][]map[string]any `json:"actions,omitempty"`
 }
 
+type RulePhaseReorder struct {
+	Order []string `json:"order"`
+}
+
 type UUIDResult struct {
 	UUID string `json:"uuid"`
 }

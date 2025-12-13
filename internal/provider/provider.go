@@ -112,6 +112,7 @@ func (p *PeakhourProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewRPWAFRuleGroupResource,
 		NewTransformSettingsResource,
 		NewRuleResource,
+		NewRulePhaseOrderResource,
 		NewBulkRedirectListResource,
 		NewBulkRedirectEntryResource,
 		NewRateLimitSettingsResource,

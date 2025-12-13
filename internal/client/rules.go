@@ -51,3 +51,7 @@ func (c *Client) UpdateRule(domainName, phase, ruleUUID string, update RulePhase
 func (c *Client) DeleteRule(domainName, phase, ruleUUID string) error {
 	return c.Delete(fmt.Sprintf("/api/v1/domains/%s/services/rp/rules/phases/%s/rule/%s", domainName, phase, ruleUUID), nil)
 }
+
+func (c *Client) ReorderRulesInPhase(domainName, phase string, order []string) error {
+	return c.Put(fmt.Sprintf("/api/v1/domains/%s/services/rp/rules/phases/%s/reorder", domainName, phase), RulePhaseReorder{Order: order})
+}
