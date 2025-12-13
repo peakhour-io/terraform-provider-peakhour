@@ -94,6 +94,10 @@ See [examples/full-setup/main.tf](examples/full-setup/main.tf) for a complete ex
 - Origin pools with load balancing
 - Transform settings (image optimization, HTML processing)
 
+## Onboarding Existing Config (Many Domains)
+
+If you already have domains/rules configured in Peakhour, see `docs/onboarding-existing-config.md` for an import workflow using `cmd/peakhour-tf-onboard` and Terraform config generation (`terraform plan -generate-config-out=...`, Terraform >= 1.5).
+
 ## Resources
 
 ### `peakhour_domain`
