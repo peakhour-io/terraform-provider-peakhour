@@ -18,14 +18,14 @@ make build
 ### 2. Install Locally for Testing
 
 ```bash
-make install
+make install VERSION=0.1.0
 ```
 
 Or manually:
 
 ```bash
 mkdir -p ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.0/linux_amd64
-cp terraform-provider-peakhour ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.0/linux_amd64/
+cp terraform-provider-peakhour ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.0/linux_amd64/terraform-provider-peakhour_v0.1.0
 ```
 
 ### 3. Configure Local Development
@@ -220,6 +220,10 @@ The provider calls these Peakhour API endpoints:
 Make sure you've either:
 1. Installed it: `make install`
 2. Or configured dev overrides in `~/.terraformrc`
+
+## Private distribution (clients)
+
+For shipping a private binary bundle to clients (filesystem mirror), see `docs/provider-distribution.md`.
 
 ### API Authentication errors
 

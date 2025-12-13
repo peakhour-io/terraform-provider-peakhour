@@ -40,6 +40,8 @@ provider "peakhour" {
 }
 ```
 
+If you are using a private build of this provider (not installed from the public registry), see `docs/provider-distribution.md`.
+
 ### Authentication
 
 The provider requires a Peakhour API key. Set it via:
@@ -996,7 +998,7 @@ go build -o terraform-provider-peakhour
    # clear old lock/state files to avoid checksum mismatch errors:
    make clean
    make build
-   make install
+   make install VERSION=0.1.0
    ```
 
 2. Run Terraform:
