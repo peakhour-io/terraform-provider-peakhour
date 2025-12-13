@@ -130,6 +130,38 @@ func TestClient_ReturnsAPIErrorWithStatusCode(t *testing.T) {
 	}
 }
 
+func TestAPIError_ErrorFormatsValidationErrors(t *testing.T) {
+	err := &APIError{
+		StatusCode: http.StatusBadRequest,
+		Body: `{"error":"Failed to validate request","validation_errors":[` +
+			`{"loc":["body","name"],"msg":"Field required","type":"missing"},` +
+			`{"loc":["body","addresses",0,"address"],"msg":"Invalid address","type":"value_error"}` +
+			`],"v":2}`,
+	}
+
+	got := err.Error()
+	want := "API error (status 400): Failed to validate request\n" +
+		"Validation errors:\n" +
+		"- body.name: Field required (missing)\n" +
+		"- body.addresses.0.address: Invalid address (value_error)"
+	if got != want {
+		t.Fatalf("APIError.Error() mismatch\n got: %q\nwant: %q", got, want)
+	}
+}
+
+func TestAPIError_ErrorFormatsDetailString(t *testing.T) {
+	err := &APIError{
+		StatusCode: http.StatusForbidden,
+		Body:       `{"detail":"Permission denied"}`,
+	}
+
+	got := err.Error()
+	want := "API error (status 403): Permission denied"
+	if got != want {
+		t.Fatalf("APIError.Error() mismatch\n got: %q\nwant: %q", got, want)
+	}
+}
+
 // Test 4: IsNotFound helper should work correctly
 func TestAPIError_IsNotFound(t *testing.T) {
 	tests := []struct {

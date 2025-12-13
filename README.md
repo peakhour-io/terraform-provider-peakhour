@@ -63,7 +63,11 @@ export PEAKHOUR_BASE_URL="https://console.staging.peakhour.io"
 
 ## API Errors
 
-When the Peakhour API returns an error (validation, permission issues, etc.), Terraform will fail the operation and surface the API status code plus the error message. If the API returns a JSON body like `{"error":"..."}`, the provider extracts the `error` field; otherwise it includes the raw response body.
+When the Peakhour API returns an error (validation, permission issues, etc.), Terraform will fail the operation and surface the API status code plus the error message.
+
+- If the API returns `{"error":"...", "validation_errors":[...]}`, the provider includes the `validation_errors` details in the Terraform error.
+- If the API returns `{"error":"..."}`, the provider uses the `error` field.
+- Otherwise, it falls back to the raw response body.
 
 ## Usage
 

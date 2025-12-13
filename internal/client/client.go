@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -24,15 +25,80 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
+	type validationError struct {
+		Loc  []any  `json:"loc"`
+		Msg  string `json:"msg"`
+		Type string `json:"type"`
+	}
+
 	type errorPayload struct {
-		Error string `json:"error"`
+		Error            string            `json:"error"`
+		ValidationErrors []validationError `json:"validation_errors"`
+		Detail           any               `json:"detail"`
 	}
 
 	var payload errorPayload
-	if err := json.Unmarshal([]byte(e.Body), &payload); err == nil && payload.Error != "" {
-		return fmt.Sprintf("API error (status %d): %s", e.StatusCode, payload.Error)
+	if err := json.Unmarshal([]byte(e.Body), &payload); err == nil {
+		if payload.Error != "" {
+			if len(payload.ValidationErrors) == 0 {
+				return fmt.Sprintf("API error (status %d): %s", e.StatusCode, payload.Error)
+			}
+
+			lines := make([]string, 0, len(payload.ValidationErrors))
+			for _, ve := range payload.ValidationErrors {
+				loc := formatValidationLoc(ve.Loc)
+				msg := strings.TrimSpace(ve.Msg)
+
+				switch {
+				case loc == "" && msg != "":
+					lines = append(lines, msg)
+				case msg == "":
+					lines = append(lines, loc)
+				case ve.Type != "":
+					lines = append(lines, fmt.Sprintf("%s: %s (%s)", loc, msg, ve.Type))
+				default:
+					lines = append(lines, fmt.Sprintf("%s: %s", loc, msg))
+				}
+			}
+
+			return fmt.Sprintf("API error (status %d): %s\nValidation errors:\n- %s", e.StatusCode, payload.Error, strings.Join(lines, "\n- "))
+		}
+
+		if payload.Detail != nil {
+			switch v := payload.Detail.(type) {
+			case string:
+				if strings.TrimSpace(v) != "" {
+					return fmt.Sprintf("API error (status %d): %s", e.StatusCode, v)
+				}
+			}
+		}
 	}
+
 	return fmt.Sprintf("API error (status %d): %s", e.StatusCode, e.Body)
+}
+
+func formatValidationLoc(loc []any) string {
+	if len(loc) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(loc))
+	for _, part := range loc {
+		switch v := part.(type) {
+		case string:
+			parts = append(parts, v)
+		case float64:
+			if v == float64(int(v)) {
+				parts = append(parts, fmt.Sprintf("%d", int(v)))
+			} else {
+				parts = append(parts, fmt.Sprintf("%v", v))
+			}
+		default:
+			parts = append(parts, fmt.Sprint(v))
+		}
+	}
+
+	return strings.Join(parts, ".")
 }
 
 func (e *APIError) IsNotFound() bool {
