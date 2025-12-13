@@ -1,4 +1,4 @@
-.PHONY: build install test clean fmt vet
+.PHONY: build install test testacc clean fmt vet lint
 
 build:
 	go build -o terraform-provider-peakhour
@@ -9,6 +9,9 @@ install: build
 
 test:
 	go test -v ./...
+
+testacc:
+	TF_ACC=1 go test ./... -run '^TestAcc' -v -timeout 60m
 
 fmt:
 	go fmt ./...

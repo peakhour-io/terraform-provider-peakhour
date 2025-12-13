@@ -525,6 +525,32 @@ go build -o terraform-provider-peakhour
 go test ./...
 ```
 
+### Acceptance Tests (E2E)
+
+Acceptance tests run Terraform against a real Peakhour account.
+
+**Prerequisites:**
+- Terraform CLI available in `PATH`
+- `PEAKHOUR_API_KEY` set
+- `PEAKHOUR_TEST_DOMAIN` set to an existing domain in your Peakhour account (ideally a dedicated test domain)
+- Optional: `PEAKHOUR_BASE_URL` for non-production environments
+
+Run:
+
+```bash
+export PEAKHOUR_API_KEY="your-api-key"
+export PEAKHOUR_TEST_DOMAIN="test.example.com"
+make testacc
+```
+
+### Jenkins
+
+This repo includes a `Jenkinsfile` that runs unit tests by default and can run acceptance tests when `RUN_ACCEPTANCE=true`.
+
+- Configure a Jenkins string credential named `peakhour-api-key` (or update `Jenkinsfile` to match your credential ID).
+- Provide `PEAKHOUR_TEST_DOMAIN` as a Jenkins parameter (and optionally `PEAKHOUR_BASE_URL`).
+- Optional: override tool versions via `GO_VERSION` and `TERRAFORM_VERSION` parameters.
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.

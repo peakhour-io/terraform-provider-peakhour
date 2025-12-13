@@ -253,6 +253,43 @@ Expected: `git status --porcelain` is clean
 
 ---
 
+## Task 10: Acceptance Tests (E2E) + Jenkins wiring
+
+**Files:**
+- Verify tests:
+  - `internal/provider/provider_acceptance_test.go`
+  - `internal/provider/rule_list_acceptance_test.go`
+  - `internal/provider/image_transform_acceptance_test.go`
+- Verify helper: `internal/provider/acceptance_test.go`
+- Verify make target: `Makefile` (`testacc`)
+- Verify CI: `Jenkinsfile`
+- Verify docs: `README.md`
+
+**Prereqs:**
+- Terraform CLI available in `PATH`
+- `TF_ACC=1`
+- `PEAKHOUR_API_KEY` set
+- `PEAKHOUR_TEST_DOMAIN` set (for resource tests)
+
+**Step 1: Run smoke acceptance test**
+Run:
+```bash
+TF_ACC=1 PEAKHOUR_API_KEY="..." go test ./internal/provider -run '^TestAccProvider_Smoke$' -v
+```
+Expected: PASS
+
+**Step 2: Run full acceptance suite**
+Run:
+```bash
+TF_ACC=1 PEAKHOUR_API_KEY="..." PEAKHOUR_TEST_DOMAIN="test.example.com" make testacc
+```
+Expected: PASS
+
+**Step 3: Jenkins**
+Acceptance tests run when `RUN_ACCEPTANCE=true`, using the `peakhour-api-key` credential and the `PEAKHOUR_TEST_DOMAIN` parameter.
+
+---
+
 ## Handoff Notes / Learnings
 
 - The original plan file was lost from the repo; this doc is the reconstructed source-of-truth.
