@@ -45,3 +45,41 @@ resource "peakhour_rp_waf_owasp_settings" "example" {
   depends_on = [peakhour_reverse_proxy_service.example]
 }
 
+resource "peakhour_rp_waf_custom_rule" "example" {
+  domain = peakhour_domain.example.name
+
+  name        = "Block curl user-agent"
+  description = "Example custom rule (pass action)"
+  enabled     = true
+
+  rules_json = jsonencode([
+    {
+      variable      = "REQUEST_HEADERS"
+      variable_part = "user-agent"
+      operator      = "@contains"
+      operator_arg  = "curl"
+    }
+  ])
+
+  action_json = jsonencode({
+    action_name = "pass"
+  })
+
+  logging_json = jsonencode({
+    message  = "matched tf custom rule"
+    severity = "INFO"
+    tags     = ["terraform"]
+  })
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+resource "peakhour_rp_waf_rule_group" "example" {
+  domain = peakhour_domain.example.name
+
+  ruleset   = "owaspv33"
+  file_name = "REQUEST-913-SCANNER-DETECTION.conf"
+  enabled   = false
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}

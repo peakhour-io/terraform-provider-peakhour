@@ -436,6 +436,61 @@ See [examples/waf/main.tf](examples/waf/main.tf).
 
 ---
 
+### `peakhour_rp_waf_custom_rule`
+
+Manages a WAF custom rule for a domain.
+
+```hcl
+resource "peakhour_rp_waf_custom_rule" "example" {
+  domain = "example.com"
+
+  name        = "Block curl user-agent"
+  description = "Example custom rule (pass action)"
+  enabled     = true
+
+  rules_json = jsonencode([
+    {
+      variable      = "REQUEST_HEADERS"
+      variable_part = "user-agent"
+      operator      = "@contains"
+      operator_arg  = "curl"
+    }
+  ])
+
+  action_json = jsonencode({
+    action_name = "pass"
+  })
+
+  logging_json = jsonencode({
+    message  = "matched tf custom rule"
+    severity = "INFO"
+    tags     = ["terraform"]
+  })
+}
+```
+
+See [examples/waf/main.tf](examples/waf/main.tf).
+
+---
+
+### `peakhour_rp_waf_rule_group`
+
+Manages the enabled state of a WAF rule group (file) within a ruleset.
+
+```hcl
+resource "peakhour_rp_waf_rule_group" "example" {
+  domain = "example.com"
+
+  ruleset   = "owaspv33"
+  file_name = "REQUEST-913-SCANNER-DETECTION.conf"
+  enabled   = false
+}
+```
+
+See [examples/waf/main.tf](examples/waf/main.tf).
+
+---
+
 ### `peakhour_rp_firewall_settings`
 
 Manages firewall settings such as challenge cookie key configuration.

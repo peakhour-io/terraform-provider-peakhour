@@ -22,6 +22,8 @@ Completed from this plan (merged):
   - `peakhour_rp_threat_block_list`
   - `peakhour_rp_waf_options`
   - `peakhour_rp_waf_owasp_settings`
+  - `peakhour_rp_waf_custom_rule`
+  - `peakhour_rp_waf_rule_group`
   - `peakhour_rp_firewall_settings`
   - `peakhour_rp_firewall_error_page`
   - `peakhour_rp_lua_options`
@@ -47,6 +49,8 @@ The provider currently models these API areas:
 - Threat block list selection: `peakhour_rp_threat_block_list` (`/services/rp/threats/block_list`)
 - WAF options: `peakhour_rp_waf_options` (`/services/rp/waf`)
 - WAF OWASP settings: `peakhour_rp_waf_owasp_settings` (`/services/rp/waf/owasp`)
+- WAF custom rules: `peakhour_rp_waf_custom_rule` (`/services/rp/waf/customrule`)
+- WAF rule group toggle: `peakhour_rp_waf_rule_group` (`/services/rp/waf/ruleset/{ruleset}/rulegroup/{rulegroup}`)
 - Firewall settings: `peakhour_rp_firewall_settings` (`/services/rp/firewall`)
 - Firewall error page: `peakhour_rp_firewall_error_page` (`/services/rp/firewall/error_page`)
 - Lua options: `peakhour_rp_lua_options` (`/services/rp/lua`)
@@ -108,8 +112,10 @@ What looks “vhost-ish” is split across:
 ### WAF (large surface area; partial)
 - ✅ WAF options: `GET/PATCH /api/v1/domains/{domain}/services/rp/waf` (`peakhour_rp_waf_options`)
 - ✅ OWASP settings: `GET/PATCH /api/v1/domains/{domain}/services/rp/waf/owasp` (`peakhour_rp_waf_owasp_settings`)
-- ⏳ Custom rules: `.../waf/customrule*`
-- ⏳ Rulesets/rulegroups/rules: `.../waf/ruleset*` and `.../waf/rule/{rule}`
+- ✅ Custom rules: `.../waf/customrule*` (`peakhour_rp_waf_custom_rule`)
+- ✅ Rule group toggles: `.../waf/ruleset/{ruleset}/rulegroup/{rulegroup}` (`peakhour_rp_waf_rule_group`)
+- ⏳ Rule toggles: `.../waf/rule/{rule}` (and disabled-rules listing)
+- ⏳ Custom rule ordering: `PATCH .../waf/customrule` (`WafCustomRuleReorder`)
 
 ## Additional spec modules not modeled (likely separate milestones)
 
@@ -128,8 +134,8 @@ What looks “vhost-ish” is split across:
 ## Proposed next implementation order (remaining)
 
 1. **WAF suite (remaining)**
-   - Custom rules CRUD + reorder.
-   - Ruleset/rulegroup/rule toggles (enable/disable).
+   - Custom rule ordering.
+   - Individual rule toggles (enable/disable).
 
 For each new area:
 - Add `internal/client` methods + DTOs as needed.
