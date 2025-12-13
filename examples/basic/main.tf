@@ -27,15 +27,16 @@ resource "peakhour_origin_pool" "backend" {
   domain = peakhour_domain.example.name
   tag    = "production"
 
-  address {
-    address = "192.0.2.1:8080"
-    weight  = 100
-  }
-
-  address {
-    address = "192.0.2.2:8080"
-    weight  = 100
-  }
+  address = [
+    {
+      address = "192.0.2.1:8080"
+      weight  = 100
+    },
+    {
+      address = "192.0.2.2:8080"
+      weight  = 100
+    },
+  ]
 
   shield_name         = "sydney"
   load_balancing_mode = "round_robin"

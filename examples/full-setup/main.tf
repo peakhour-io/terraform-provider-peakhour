@@ -71,20 +71,20 @@ resource "peakhour_origin_pool" "backend" {
   tag    = "production"
 
   # Multiple backend servers
-  address {
-    address = "backend1.internal:8080"
-    weight  = 100
-  }
-
-  address {
-    address = "backend2.internal:8080"
-    weight  = 100
-  }
-
-  address {
-    address = "backend3.internal:8080"
-    weight  = 50
-  }
+  address = [
+    {
+      address = "backend1.internal:8080"
+      weight  = 100
+    },
+    {
+      address = "backend2.internal:8080"
+      weight  = 100
+    },
+    {
+      address = "backend3.internal:8080"
+      weight  = 50
+    },
+  ]
 
   # Shield configuration
   shield_name = "sydney"

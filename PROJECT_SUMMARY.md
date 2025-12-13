@@ -125,10 +125,12 @@ resource "peakhour_origin_pool" "backend" {
   domain = peakhour_domain.example.name
   tag    = "production"
 
-  address {
-    address = "192.0.2.1:8080"
-    weight  = 100
-  }
+  address = [
+    {
+      address = "192.0.2.1:8080"
+      weight  = 100
+    },
+  ]
 
   load_balancing_mode = "round_robin"
   depends_on = [peakhour_reverse_proxy_service.example]
@@ -145,7 +147,7 @@ make build
 # Test locally
 export PEAKHOUR_API_KEY="your-key"
 cd examples/basic
-terraform init
+terraform validate
 terraform plan
 terraform apply
 ```
@@ -194,9 +196,9 @@ terraform apply
 ## Dependencies
 
 - `github.com/hashicorp/terraform-plugin-framework` v1.12.0
-- `github.com/hashicorp/terraform-plugin-go` v0.25.0
+- `github.com/hashicorp/terraform-plugin-go` v0.24.0
 - `github.com/hashicorp/terraform-plugin-log` v0.9.0
-- Go 1.21+
+- Go 1.22+
 
 ## Status
 

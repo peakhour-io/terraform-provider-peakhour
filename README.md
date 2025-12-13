@@ -16,7 +16,7 @@ Terraform provider for managing [Peakhour](https://www.peakhour.io) CDN and edge
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21 (for development)
+- [Go](https://golang.org/doc/install) >= 1.22 (for development)
 
 ## Installation
 
@@ -74,10 +74,12 @@ resource "peakhour_origin_pool" "backend" {
   domain = peakhour_domain.example.name
   tag    = "production"
 
-  address {
-    address = "192.0.2.1:8080"
-    weight  = 100
-  }
+  address = [
+    {
+      address = "192.0.2.1:8080"
+      weight  = 100
+    },
+  ]
 
   depends_on = [peakhour_reverse_proxy_service.example]
 }
@@ -170,15 +172,16 @@ resource "peakhour_origin_pool" "backend" {
   domain = "example.com"
   tag    = "production"
 
-  address {
-    address = "192.0.2.1:8080"
-    weight  = 100
-  }
-
-  address {
-    address = "192.0.2.2:8080"
-    weight  = 100
-  }
+  address = [
+    {
+      address = "192.0.2.1:8080"
+      weight  = 100
+    },
+    {
+      address = "192.0.2.2:8080"
+      weight  = 100
+    },
+  ]
 
   shield_name         = "sydney"
   load_balancing_mode = "round_robin"
@@ -188,7 +191,7 @@ resource "peakhour_origin_pool" "backend" {
 **Arguments:**
 - `domain` (Required, String) - Domain name
 - `tag` (Required, String) - Origin pool tag/name
-- `address` (Required, Block List) - Backend server addresses
+- `address` (Required, List of Object) - Backend server addresses
   - `address` (Required, String) - Backend address (IP:port, domain:port, or URL)
   - `weight` (Optional, Number) - Load balancing weight
 - `shield_name` (Optional, String) - Shield location name
@@ -507,11 +510,11 @@ go build -o terraform-provider-peakhour
    }
    ```
 
-3. Run Terraform:
+3. Run Terraform (skip `terraform init` when using provider dev overrides):
    ```bash
    cd examples/basic
    export PEAKHOUR_API_KEY="your-api-key"
-   terraform init
+   terraform validate
    terraform plan
    terraform apply
    ```

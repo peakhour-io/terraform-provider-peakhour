@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Go 1.21+ installed
+1. Go 1.22+ installed
 2. Terraform 1.0+ installed
 3. Peakhour API key
 
@@ -46,7 +46,7 @@ provider_installation {
 ```bash
 cd examples/basic
 export PEAKHOUR_API_KEY="your-api-key-here"
-terraform init
+terraform validate
 terraform plan
 terraform apply
 ```
@@ -91,10 +91,12 @@ resource "peakhour_origin_pool" "backend" {
   domain = peakhour_domain.mysite.name
   tag    = "production"
 
-  address {
-    address = "backend.internal:8080"
-    weight  = 100
-  }
+  address = [
+    {
+      address = "backend.internal:8080"
+      weight  = 100
+    },
+  ]
 
   shield_name         = "sydney"
   load_balancing_mode = "round_robin"

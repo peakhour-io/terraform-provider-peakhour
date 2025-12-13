@@ -229,7 +229,7 @@ make build
 # Test with examples
 cd examples/rules
 export PEAKHOUR_API_KEY="your-key"
-terraform init
+terraform validate
 terraform plan
 terraform apply
 ```
