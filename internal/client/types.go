@@ -365,3 +365,29 @@ type WAFOptions struct {
 	WAFExcludedFiles            []map[string]any `json:"waf_excluded_files"`
 	WAFSetExposedPasswordHeader *bool            `json:"waf_set_exposed_password_header"`
 }
+
+type WAFCustomRule struct {
+	Name        *string          `json:"name"`
+	Description *string          `json:"description"`
+	Enabled     *bool            `json:"enabled"`
+	Rules       []map[string]any `json:"rules"`
+	Action      map[string]any   `json:"action"`
+	Logging     map[string]any   `json:"logging"`
+	UUID        string           `json:"uuid"`
+	RuleID      int              `json:"rule_id"`
+	Created     string           `json:"created"`
+}
+
+type WAFCustomRuleReorder struct {
+	Order []string `json:"order"`
+}
+
+type WAFRuleGroup struct {
+	FileName    string  `json:"file_name"`
+	Description *string `json:"description"`
+	Enabled     bool    `json:"enabled"`
+}
+
+type WAFToggle struct {
+	State bool `json:"state"`
+}

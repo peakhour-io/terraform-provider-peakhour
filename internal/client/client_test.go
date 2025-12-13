@@ -900,6 +900,116 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 			}
 			return
 
+		case "/api/v1/domains/example.com/services/rp/waf/customrule":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode([]map[string]any{
+					{
+						"name":        "Block bad bots",
+						"description": "example",
+						"enabled":     true,
+						"rules": []map[string]any{
+							{
+								"variable":      "REQUEST_HEADERS",
+								"variable_part": "user-agent",
+								"operator":      "@contains",
+								"operator_arg":  "curl",
+							},
+						},
+						"action": map[string]any{
+							"action_name": "deny",
+						},
+						"logging": map[string]any{
+							"message": "blocked",
+						},
+						"uuid":    "rule-123",
+						"rule_id": 1001,
+						"created": "2025-01-01T00:00:00Z",
+					},
+				})
+			case "PUT":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if _, ok := body["rules"]; !ok {
+					t.Errorf("expected rules in request body")
+				}
+				if _, ok := body["action"]; !ok {
+					t.Errorf("expected action in request body")
+				}
+				if _, ok := body["logging"]; !ok {
+					t.Errorf("expected logging in request body")
+				}
+				json.NewEncoder(w).Encode(map[string]any{
+					"name":        body["name"],
+					"description": body["description"],
+					"enabled":     body["enabled"],
+					"rules":       body["rules"],
+					"action":      body["action"],
+					"logging":     body["logging"],
+					"uuid":        "rule-123",
+					"rule_id":     1001,
+					"created":     "2025-01-01T00:00:00Z",
+				})
+			case "PATCH":
+				var body WAFCustomRuleReorder
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if len(body.Order) == 0 {
+					t.Errorf("expected order in request body")
+				}
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/waf/customrule/rule-123":
+			switch r.Method {
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if _, ok := body["rules"]; !ok {
+					t.Errorf("expected rules in request body")
+				}
+				w.WriteHeader(http.StatusNoContent)
+			case "DELETE":
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/waf/customrule/rule-123/enable":
+			if r.Method != "PATCH" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+
+		case "/api/v1/domains/example.com/services/rp/waf/ruleset/owaspv33":
+			if r.Method != "GET" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			json.NewEncoder(w).Encode([]map[string]any{
+				{
+					"file_name":   "group-1",
+					"description": "Example group",
+					"enabled":     true,
+				},
+			})
+			return
+
+		case "/api/v1/domains/example.com/services/rp/waf/ruleset/owaspv33/rulegroup/group-1":
+			if r.Method != "PATCH" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			var body WAFToggle
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			w.WriteHeader(http.StatusAccepted)
+			return
+
 		default:
 			t.Errorf("Unexpected path: %s", r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
@@ -1045,5 +1155,68 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 		},
 	}); err != nil {
 		t.Fatalf("UpdateRPWAFOWASPSettings failed: %v", err)
+	}
+
+	if _, err := c.ListRPWAFCustomRules("example.com"); err != nil {
+		t.Fatalf("ListRPWAFCustomRules failed: %v", err)
+	}
+	created, err := c.CreateRPWAFCustomRule("example.com", map[string]any{
+		"name":        "Block bad bots",
+		"description": "example",
+		"enabled":     true,
+		"rules": []map[string]any{
+			{
+				"variable":      "REQUEST_HEADERS",
+				"variable_part": "user-agent",
+				"operator":      "@contains",
+				"operator_arg":  "curl",
+			},
+		},
+		"action": map[string]any{
+			"action_name": "deny",
+		},
+		"logging": map[string]any{
+			"message": "blocked",
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateRPWAFCustomRule failed: %v", err)
+	}
+	if err := c.UpdateRPWAFCustomRule("example.com", created.UUID, map[string]any{
+		"name":        "Block bad bots updated",
+		"description": "example",
+		"enabled":     true,
+		"rules": []map[string]any{
+			{
+				"variable":      "REQUEST_HEADERS",
+				"variable_part": "user-agent",
+				"operator":      "@contains",
+				"operator_arg":  "curl",
+			},
+		},
+		"action": map[string]any{
+			"action_name": "deny",
+		},
+		"logging": map[string]any{
+			"message": "blocked",
+		},
+	}); err != nil {
+		t.Fatalf("UpdateRPWAFCustomRule failed: %v", err)
+	}
+	if err := c.EnableRPWAFCustomRule("example.com", created.UUID); err != nil {
+		t.Fatalf("EnableRPWAFCustomRule failed: %v", err)
+	}
+	if err := c.ReorderRPWAFCustomRules("example.com", []string{created.UUID}); err != nil {
+		t.Fatalf("ReorderRPWAFCustomRules failed: %v", err)
+	}
+	if err := c.DeleteRPWAFCustomRule("example.com", created.UUID); err != nil {
+		t.Fatalf("DeleteRPWAFCustomRule failed: %v", err)
+	}
+
+	if _, err := c.ListRPWAFRuleGroups("example.com", "owaspv33"); err != nil {
+		t.Fatalf("ListRPWAFRuleGroups failed: %v", err)
+	}
+	if err := c.SetRPWAFRuleGroupEnabled("example.com", "owaspv33", "group-1", false); err != nil {
+		t.Fatalf("SetRPWAFRuleGroupEnabled failed: %v", err)
 	}
 }
