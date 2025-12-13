@@ -14,13 +14,18 @@ Completed from this plan (merged):
   - `peakhour_acme_certificate`
   - `peakhour_rp_origin_config`
   - `peakhour_rp_cdn_cache`
+  - `peakhour_rp_cdn_purge_resources`
+  - `peakhour_rp_cdn_purge_wildcard`
+  - `peakhour_rp_cdn_purge_tags`
   - `peakhour_rp_bots`
+  - `peakhour_rp_threat_access_list_rule`
+  - `peakhour_rp_threat_block_list`
   - `peakhour_rp_firewall_settings`
   - `peakhour_rp_firewall_error_page`
   - `peakhour_rp_lua_options`
-- Updated onboarding inventory to include these resources (`internal/onboard/inventory.go`).
+- Updated onboarding inventory to include config resources (`internal/onboard/inventory.go`) (purge resources are actions and are not inventoried).
 - Extended unit/contract checks to cover spec paths and provider registration (`internal/spec/contract_test.go`).
-- Updated docs/examples for the new resources (`README.md`, `examples/full-setup/main.tf`, `examples/rate-limiting/main.tf`).
+- Updated docs/examples for the new resources (`README.md`, `examples/full-setup/main.tf`, `examples/rate-limiting/main.tf`, `examples/cdn-purge/main.tf`, `examples/threats/main.tf`).
 
 ## What the Terraform provider covers today
 
@@ -34,7 +39,10 @@ The provider currently models these API areas:
 - Origin pools: `peakhour_origin_pool` (`/api/v1/domains/{domain}/origins`)
 - Origin behavior: `peakhour_rp_origin_config` (`/services/rp/origin`)
 - CDN cache config: `peakhour_rp_cdn_cache` (`/services/rp/cdn`)
+- CDN purge actions (run-once): `peakhour_rp_cdn_purge_resources`, `peakhour_rp_cdn_purge_wildcard`, `peakhour_rp_cdn_purge_tags`
 - Bots config: `peakhour_rp_bots` (`/services/rp/bots`)
+- Threat access list rules: `peakhour_rp_threat_access_list_rule` (`/services/rp/threats/access_list`)
+- Threat block list selection: `peakhour_rp_threat_block_list` (`/services/rp/threats/block_list`)
 - Firewall settings: `peakhour_rp_firewall_settings` (`/services/rp/firewall`)
 - Firewall error page: `peakhour_rp_firewall_error_page` (`/services/rp/firewall/error_page`)
 - Lua options: `peakhour_rp_lua_options` (`/services/rp/lua`)
@@ -71,7 +79,12 @@ What looks “vhost-ish” is split across:
 
 ### CDN caching config + flush actions (partial)
 - ✅ Cache config: `GET/PATCH /api/v1/domains/{domain}/services/rp/cdn` (`peakhour_rp_cdn_cache`)
-- Flush/purge endpoints exist (resources/tag/wildcard). These are “actions”, not stable desired-state; if we model them in Terraform, they should be explicit “run once” style resources or handled outside Terraform.
+- ✅ Flush/purge endpoints: modeled as explicit “run once” Terraform resources:
+  - `peakhour_rp_cdn_purge_resources` (`POST /api/v1/domains/{domain}/services/rp/cdn/resources/flush`)
+  - `peakhour_rp_cdn_purge_wildcard` (`POST /api/v1/domains/{domain}/services/rp/cdn/wildcard/flush`)
+  - `peakhour_rp_cdn_purge_tags` (`POST /api/v1/domains/{domain}/services/rp/cdn/tag/flush`)
+
+**Terraform design note:** These are actions, not stable desired-state. They run on `Create` (and on changes via `RequiresReplace`). Re-run by bumping `run_id` (or tainting).
 
 ### Bots config (done)
 - ✅ `GET/PATCH /api/v1/domains/{domain}/services/rp/bots` (`peakhour_rp_bots`)
@@ -83,10 +96,10 @@ What looks “vhost-ish” is split across:
 ### Lua hooks (done)
 - ✅ `GET/PUT /api/v1/domains/{domain}/services/rp/lua` (`peakhour_rp_lua_options`)
 
-### Threats lists (missing)
-- Access list rules: `GET/PUT /api/v1/domains/{domain}/services/rp/threats/access_list`
-- Access list rule CRUD: `GET/PATCH/DELETE /api/v1/domains/{domain}/services/rp/threats/access_list/{rule}`
-- Block lists: `GET/POST /api/v1/domains/{domain}/services/rp/threats/block_list`
+### Threats lists (done)
+- ✅ Access list rules: `GET/PUT /api/v1/domains/{domain}/services/rp/threats/access_list` (`peakhour_rp_threat_access_list_rule`)
+- ✅ Access list rule CRUD: `GET/PATCH/DELETE /api/v1/domains/{domain}/services/rp/threats/access_list/{rule}` (`peakhour_rp_threat_access_list_rule`)
+- ✅ Block lists selection: `GET/POST /api/v1/domains/{domain}/services/rp/threats/block_list` (`peakhour_rp_threat_block_list`)
 
 ### WAF (large surface area; missing)
 - WAF options: `GET/POST /api/v1/domains/{domain}/services/rp/waf`
@@ -105,15 +118,12 @@ What looks “vhost-ish” is split across:
 - **Some config is not readable**: `/services/rp/firewall/error_page` indicates whether a page exists, but doesn’t return the content; Terraform can’t auto-verify drift of `content`.
 - **Some secrets are write-only**: `/services/rp/ssl/certificate` does not return uploaded PEM/key material; Terraform can store what you upload, but cannot validate drift.
 - **Spec-required-but-nullable fields**: `LuaOptions` fields are required by the schema but can be `null`; we send a full object (including `null` values) to satisfy “required” without forcing defaults.
+- **Action endpoints in Terraform**: purge/flush endpoints are best modeled as “run once” resources with a `run_id` input (and `RequiresReplace`), not as normal desired-state resources.
 - **Go toolchain**: the repo requires Go 1.22; `go.mod` must use `go 1.22` (not `go 1.22.0`) and local tests should run with the pinned toolchain in `.toolchains/go1.22.10/bin/go` (or any Go 1.22+).
 
 ## Proposed next implementation order (remaining)
 
-1. **Cache purge/flush actions**
-   - If desired, model as explicit “run once” resources (not normal config) or keep outside Terraform.
-2. **Threats lists**
-   - New resources for access list and block list.
-3. **WAF suite**
+1. **WAF suite**
    - Multiple resources + reorder operations; biggest effort.
 
 For each new area:

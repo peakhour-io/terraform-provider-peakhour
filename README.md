@@ -292,6 +292,60 @@ See [examples/full-setup/main.tf](examples/full-setup/main.tf).
 
 ---
 
+### `peakhour_rp_cdn_purge_resources`
+
+Triggers a CDN purge for specific resources (action).
+
+**Note:** This is not stable desired-state. The API call is performed when the resource is created. To run another purge, change `run_id` (or taint the resource).
+
+```hcl
+resource "peakhour_rp_cdn_purge_resources" "example" {
+  domain = "example.com"
+  run_id = "release-2025-12-13"
+
+  paths = ["/index.html", "/assets/app.js"]
+  soft  = true
+}
+```
+
+See [examples/cdn-purge/main.tf](examples/cdn-purge/main.tf).
+
+---
+
+### `peakhour_rp_cdn_purge_wildcard`
+
+Triggers a CDN purge for wildcard paths (action).
+
+```hcl
+resource "peakhour_rp_cdn_purge_wildcard" "example" {
+  domain = "example.com"
+  run_id = "release-2025-12-13-images"
+
+  paths = ["/images/*"]
+}
+```
+
+See [examples/cdn-purge/main.tf](examples/cdn-purge/main.tf).
+
+---
+
+### `peakhour_rp_cdn_purge_tags`
+
+Triggers a CDN purge by cache tag (action).
+
+```hcl
+resource "peakhour_rp_cdn_purge_tags" "example" {
+  domain = "example.com"
+  run_id = "release-2025-12-13-tags"
+
+  tags = ["marketing"]
+}
+```
+
+See [examples/cdn-purge/main.tf](examples/cdn-purge/main.tf).
+
+---
+
 ### `peakhour_rp_bots`
 
 Manages bots verification settings.
@@ -306,6 +360,38 @@ resource "peakhour_rp_bots" "example" {
 ```
 
 See [examples/full-setup/main.tf](examples/full-setup/main.tf).
+
+---
+
+### `peakhour_rp_threat_access_list_rule`
+
+Manages a reverse proxy threat access list rule for a domain.
+
+```hcl
+resource "peakhour_rp_threat_access_list_rule" "example" {
+  domain      = "example.com"
+  rule_type   = "whitelist"
+  content     = "203.0.113.10"
+  description = "Allow office IP"
+}
+```
+
+See [examples/threats/main.tf](examples/threats/main.tf).
+
+---
+
+### `peakhour_rp_threat_block_list`
+
+Manages the set of enabled reverse proxy threat block lists for a domain.
+
+```hcl
+resource "peakhour_rp_threat_block_list" "example" {
+  domain     = "example.com"
+  blocklists = ["tor"]
+}
+```
+
+See [examples/threats/main.tf](examples/threats/main.tf).
 
 ---
 
