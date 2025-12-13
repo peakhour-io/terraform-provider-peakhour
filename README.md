@@ -35,6 +35,8 @@ terraform {
 
 provider "peakhour" {
   api_key = var.peakhour_api_key
+  # Optional: override API endpoint (defaults to https://console.peakhour.io)
+  # base_url = "https://console.staging.peakhour.io"
 }
 ```
 
@@ -53,6 +55,11 @@ The provider requires a Peakhour API key. Set it via:
    ```bash
    export PEAKHOUR_API_KEY="your-api-key"
    ```
+
+Optional: override API endpoint via environment variable:
+```bash
+export PEAKHOUR_BASE_URL="https://console.staging.peakhour.io"
+```
 
 ## Usage
 

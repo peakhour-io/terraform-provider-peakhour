@@ -2,12 +2,47 @@
 
 This provider supports importing an existing Peakhour configuration into Terraform state and scaffolding initial HCL using Terraform’s config generation (`-generate-config-out`).
 
+## TL;DR
+
+```bash
+# In this provider repo:
+make onboard
+
+# Generate per-domain imports into your config repo layout:
+PEAKHOUR_API_KEY="..." ./peakhour-tf-onboard --all-domains --out infra
+
+# Then, per domain:
+cd infra/domains/example.com
+terraform init
+terraform plan -generate-config-out=generated.tf
+terraform apply -auto-approve
+```
+
 ## Prerequisites
 
 - Terraform CLI **>= 1.5**
 - Go **>= 1.22** (to build the helper CLI)
 - A Peakhour API key in `PEAKHOUR_API_KEY`
 - (Optional) non-prod API base URL in `PEAKHOUR_BASE_URL`
+
+## API Endpoint / Base URL
+
+By default, the provider and onboarding CLI talk to `https://console.peakhour.io`.
+
+To point at a different API endpoint (staging, local proxy, etc.), set `PEAKHOUR_BASE_URL`:
+
+```bash
+export PEAKHOUR_BASE_URL="https://console.staging.peakhour.io"
+```
+
+Or set it explicitly in Terraform:
+
+```hcl
+provider "peakhour" {
+  # api_key can still come from PEAKHOUR_API_KEY
+  base_url = "https://console.staging.peakhour.io"
+}
+```
 
 If the provider is not published to the Terraform Registry yet, install the provider binary locally before running `terraform init` in your config repo:
 
@@ -60,4 +95,3 @@ Typical Jenkins drift job:
 - Run `terraform plan -refresh-only -detailed-exitcode`
   - exit code `0`: no drift
   - exit code `2`: drift detected (fail / notify)
-
