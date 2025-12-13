@@ -32,6 +32,7 @@ type fakeInventoryClient struct {
 	luaOptions        *client.LuaOptions
 	wafOptions        *client.WAFOptions
 	wafOWASPSettings  map[string]any
+	wafCustomRules    []client.WAFCustomRule
 	ruleLists         []client.RuleListSummary
 	rulesByPhase      map[string][]client.RulePhaseSummary
 
@@ -125,6 +126,10 @@ func (f *fakeInventoryClient) GetRPWAFOWASPSettings(domainName string) (map[stri
 	return f.wafOWASPSettings, nil
 }
 
+func (f *fakeInventoryClient) ListRPWAFCustomRules(domainName string) ([]client.WAFCustomRule, error) {
+	return f.wafCustomRules, nil
+}
+
 func (f *fakeInventoryClient) ListRuleLists(domainName string) ([]client.RuleListSummary, error) {
 	return f.ruleLists, nil
 }
@@ -178,6 +183,10 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		luaOptions:        &client.LuaOptions{},
 		wafOptions:        &client.WAFOptions{},
 		wafOWASPSettings:  map[string]any{},
+		wafCustomRules: []client.WAFCustomRule{
+			{UUID: "wafcr-2"},
+			{UUID: "wafcr-1"},
+		},
 		ruleLists: []client.RuleListSummary{
 			{UUID: "list-2", Name: "My List 2", Type: "ips"},
 			{UUID: "list-1", Name: "My List 1", Type: "ips"},
@@ -237,6 +246,8 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-1", ImportID: "example.com/access_list/al-1"},
 		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-2", ImportID: "example.com/access_list/al-2"},
 		{TypeName: "peakhour_rp_threat_block_list", Name: "threat_block_list", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_waf_custom_rule", Name: "wafcr-1", ImportID: "example.com/customrule/wafcr-1"},
+		{TypeName: "peakhour_rp_waf_custom_rule", Name: "wafcr-2", ImportID: "example.com/customrule/wafcr-2"},
 		{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: "example.com"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},

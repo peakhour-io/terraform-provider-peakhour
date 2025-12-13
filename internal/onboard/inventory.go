@@ -37,6 +37,7 @@ type InventoryClient interface {
 	GetRPLuaOptions(domainName string) (*client.LuaOptions, error)
 	GetRPWAFOptions(domainName string) (*client.WAFOptions, error)
 	GetRPWAFOWASPSettings(domainName string) (map[string]any, error)
+	ListRPWAFCustomRules(domainName string) ([]client.WAFCustomRule, error)
 	ListRuleLists(domainName string) ([]client.RuleListSummary, error)
 	ListRulesInPhase(domainName, phase string) ([]client.RulePhaseSummary, error)
 	ListImageTransformPresets(domainName string) ([]client.ImageTransformPreset, error)
@@ -245,6 +246,23 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: domain})
+	}
+
+	if rules, err := c.ListRPWAFCustomRules(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		for _, rule := range rules {
+			if rule.UUID == "" {
+				continue
+			}
+			targets = append(targets, ImportTarget{
+				TypeName: "peakhour_rp_waf_custom_rule",
+				Name:     rule.UUID,
+				ImportID: fmt.Sprintf("%s/customrule/%s", domain, rule.UUID),
+			})
+		}
 	}
 
 	if lists, err := c.ListRuleLists(domain); err != nil {
