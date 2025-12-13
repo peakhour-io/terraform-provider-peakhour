@@ -533,6 +533,23 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 			}
 			return
 
+		case "/api/v1/domains/example.com/services/acme/certificate":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"state":           "issued",
+					"not_before":      "2025-01-01T00:00:00Z",
+					"not_after":       "2026-01-01T00:00:00Z",
+					"certificate_pem": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----\n",
+				})
+			case "POST":
+				// issuance trigger
+				w.WriteHeader(http.StatusAccepted)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
 		case "/api/v1/domains/example.com/services/rp/origin":
 			switch r.Method {
 			case "GET":
@@ -548,6 +565,33 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 			case "POST":
 				var body map[string]any
 				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/ssl/certificate":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"certificate": map[string]any{
+						"cn":         "example.com",
+						"alt_name":   "www.example.com",
+						"issuer":     "Example CA",
+						"valid_from": "2025-01-01T00:00:00Z",
+						"valid_to":   "2026-01-01T00:00:00Z",
+					},
+				})
+			case "PUT":
+				var body SSLCertificateAdd
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if body.Certificate == "" {
+					t.Errorf("expected certificate in request body")
+				}
+				if body.PrivateKey == "" {
+					t.Errorf("expected private_key in request body")
+				}
 				w.WriteHeader(http.StatusOK)
 			default:
 				w.WriteHeader(http.StatusMethodNotAllowed)
@@ -685,6 +729,13 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 		t.Fatalf("UpdateAcmeSettings failed: %v", err)
 	}
 
+	if _, err := c.GetAcmeCertificate("example.com"); err != nil {
+		t.Fatalf("GetAcmeCertificate failed: %v", err)
+	}
+	if err := c.IssueAcmeCertificate("example.com"); err != nil {
+		t.Fatalf("IssueAcmeCertificate failed: %v", err)
+	}
+
 	if _, err := c.GetRPOriginConfig("example.com"); err != nil {
 		t.Fatalf("GetRPOriginConfig failed: %v", err)
 	}
@@ -718,6 +769,13 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 	}
 	if err := c.UpdateRPFirewallErrorPage("example.com", map[string]any{"error_page": nil}); err != nil {
 		t.Fatalf("UpdateRPFirewallErrorPage failed: %v", err)
+	}
+
+	if _, err := c.GetRPSSLCertificate("example.com"); err != nil {
+		t.Fatalf("GetRPSSLCertificate failed: %v", err)
+	}
+	if err := c.UpdateRPSSLCertificate("example.com", SSLCertificateAdd{Certificate: "cert", PrivateKey: "key"}); err != nil {
+		t.Fatalf("UpdateRPSSLCertificate failed: %v", err)
 	}
 
 	if _, err := c.GetRPLuaOptions("example.com"); err != nil {
