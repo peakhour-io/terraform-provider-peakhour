@@ -359,3 +359,122 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 		t.Fatalf("CommitImageTransforms failed: %v", err)
 	}
 }
+
+// Test 11: Bulk redirect endpoints should use spec paths
+func TestClient_BulkRedirectEndpoints(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/domains/example.com/services/rp/rules/bulk_redirects":
+			if r.Method == "GET" {
+				json.NewEncoder(w).Encode([]map[string]interface{}{
+					{"uuid": "list-1", "name": "legacy", "description": nil, "entries_count": 0},
+				})
+				return
+			}
+			if r.Method == "POST" {
+				var body BulkRedirectListCreate
+				json.NewDecoder(r.Body).Decode(&body)
+				if body.Name == nil || *body.Name == "" {
+					t.Errorf("Expected non-empty list name in request body")
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{"uuid": "list-1"})
+				return
+			}
+		case "/api/v1/domains/example.com/services/rp/rules/bulk_redirects/list-1":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"uuid":          "list-1",
+					"name":          "legacy",
+					"description":   nil,
+					"entries_count": 1,
+				})
+			case "PATCH":
+				w.WriteHeader(http.StatusOK)
+			case "DELETE":
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+		case "/api/v1/domains/example.com/services/rp/rules/bulk_redirects/list-1/entries":
+			if r.Method == "GET" {
+				json.NewEncoder(w).Encode([]map[string]interface{}{
+					{"id": "entry-1", "source_path": "/old", "target_url": "https://example.com/new"},
+				})
+				return
+			}
+			if r.Method == "POST" {
+				var body BulkRedirectEntryCreate
+				json.NewDecoder(r.Body).Decode(&body)
+				if body.SourcePath == nil || *body.SourcePath == "" {
+					t.Errorf("Expected source_path in request body")
+				}
+				if body.TargetURL == nil || *body.TargetURL == "" {
+					t.Errorf("Expected target_url in request body")
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"id":          "entry-1",
+					"source_path": body.SourcePath,
+					"target_url":  body.TargetURL,
+				})
+				return
+			}
+		case "/api/v1/domains/example.com/services/rp/rules/bulk_redirects/list-1/entries/entry-1":
+			switch r.Method {
+			case "PATCH":
+				w.WriteHeader(http.StatusOK)
+			case "DELETE":
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+		default:
+			t.Errorf("Unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	c := NewClient("test-key", server.URL)
+
+	if _, err := c.ListBulkRedirectLists("example.com"); err != nil {
+		t.Fatalf("ListBulkRedirectLists failed: %v", err)
+	}
+
+	listName := "legacy"
+	if _, err := c.CreateBulkRedirectList("example.com", BulkRedirectListCreate{Name: &listName}); err != nil {
+		t.Fatalf("CreateBulkRedirectList failed: %v", err)
+	}
+
+	if _, err := c.GetBulkRedirectList("example.com", "list-1"); err != nil {
+		t.Fatalf("GetBulkRedirectList failed: %v", err)
+	}
+
+	if err := c.UpdateBulkRedirectList("example.com", "list-1", BulkRedirectListUpdate{}); err != nil {
+		t.Fatalf("UpdateBulkRedirectList failed: %v", err)
+	}
+
+	if _, err := c.ListBulkRedirectEntries("example.com", "list-1"); err != nil {
+		t.Fatalf("ListBulkRedirectEntries failed: %v", err)
+	}
+
+	sourcePath := "/old"
+	targetURL := "https://example.com/new"
+	if _, err := c.CreateBulkRedirectEntry("example.com", "list-1", BulkRedirectEntryCreate{SourcePath: &sourcePath, TargetURL: &targetURL}); err != nil {
+		t.Fatalf("CreateBulkRedirectEntry failed: %v", err)
+	}
+
+	if err := c.UpdateBulkRedirectEntry("example.com", "list-1", "entry-1", BulkRedirectEntryUpdate{}); err != nil {
+		t.Fatalf("UpdateBulkRedirectEntry failed: %v", err)
+	}
+
+	if err := c.DeleteBulkRedirectEntry("example.com", "list-1", "entry-1"); err != nil {
+		t.Fatalf("DeleteBulkRedirectEntry failed: %v", err)
+	}
+
+	if err := c.DeleteBulkRedirectList("example.com", "list-1"); err != nil {
+		t.Fatalf("DeleteBulkRedirectList failed: %v", err)
+	}
+}

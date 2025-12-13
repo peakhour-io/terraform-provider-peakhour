@@ -104,6 +104,27 @@ func TestProviderResources_IncludeRateLimitGlobal(t *testing.T) {
 	}
 }
 
+func TestProviderResources_IncludeBulkRedirectResources(t *testing.T) {
+	p := provider.New("test")()
+
+	names := map[string]struct{}{}
+	for _, factory := range p.Resources(context.Background()) {
+		res := factory()
+		var resp resource.MetadataResponse
+		res.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "peakhour"}, &resp)
+		names[resp.TypeName] = struct{}{}
+	}
+
+	for _, want := range []string{
+		"peakhour_bulk_redirect_list",
+		"peakhour_bulk_redirect_entry",
+	} {
+		if _, ok := names[want]; !ok {
+			t.Fatalf("provider should register %s resource, got %v", want, sortedKeys(names))
+		}
+	}
+}
+
 func TestRateLimitGlobalSchema_Attributes(t *testing.T) {
 	res := getResourceByTypeName(t, "peakhour_rate_limit_global")
 
@@ -129,6 +150,21 @@ func TestRateLimitGlobalSchema_Attributes(t *testing.T) {
 	}
 	if _, ok := attrs["name"]; ok {
 		t.Fatalf("rate_limit_global schema should not have attribute name")
+	}
+}
+
+func TestSpecContract_BulkRedirectPathsExist(t *testing.T) {
+	spec := loadSpec(t)
+
+	for _, path := range []string{
+		"/api/v1/domains/{domain}/services/rp/rules/bulk_redirects",
+		"/api/v1/domains/{domain}/services/rp/rules/bulk_redirects/{bulk_redirect}",
+		"/api/v1/domains/{domain}/services/rp/rules/bulk_redirects/{bulk_redirect}/entries",
+		"/api/v1/domains/{domain}/services/rp/rules/bulk_redirects/{bulk_redirect}/entries/{entry}",
+	} {
+		if _, ok := spec.Paths[path]; !ok {
+			t.Fatalf("spec missing bulk redirect path %q", path)
+		}
 	}
 }
 
