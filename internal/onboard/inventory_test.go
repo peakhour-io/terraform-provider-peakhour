@@ -12,13 +12,22 @@ type fakeInventoryClient struct {
 	domainServiceErr error
 
 	reverseProxyConfig *client.ReverseProxyConfig
+	rpSettings         *client.ServiceSettings
+	rpSSLConfig        *client.SSLConfig
 	transformSettings  *client.TransformSettings
+	acmeSettings       *client.AcmeSettings
 	rateLimit          *client.RateLimit
 
-	rateLimitZones []client.RateLimitZone
-	originPools    []client.OriginPool
-	ruleLists      []client.RuleListSummary
-	rulesByPhase   map[string][]client.RulePhaseSummary
+	rateLimitZones    []client.RateLimitZone
+	originPools       []client.OriginPool
+	originConfig      *client.OriginConfig
+	cdnCacheConfig    *client.CacheConfig
+	botsConfig        *client.BotConfig
+	firewallSettings  *client.FirewallSettings
+	firewallErrorPage *client.FirewallErrorPage
+	luaOptions        *client.LuaOptions
+	ruleLists         []client.RuleListSummary
+	rulesByPhase      map[string][]client.RulePhaseSummary
 
 	imageTransforms []client.ImageTransformPreset
 
@@ -34,8 +43,20 @@ func (f *fakeInventoryClient) GetReverseProxyConfig(domainName string) (*client.
 	return f.reverseProxyConfig, nil
 }
 
+func (f *fakeInventoryClient) GetRPSettings(domainName string) (*client.ServiceSettings, error) {
+	return f.rpSettings, nil
+}
+
+func (f *fakeInventoryClient) GetRPSSLConfig(domainName string) (*client.SSLConfig, error) {
+	return f.rpSSLConfig, nil
+}
+
 func (f *fakeInventoryClient) GetTransformSettings(domainName string) (*client.TransformSettings, error) {
 	return f.transformSettings, nil
+}
+
+func (f *fakeInventoryClient) GetAcmeSettings(domainName string) (*client.AcmeSettings, error) {
+	return f.acmeSettings, nil
 }
 
 func (f *fakeInventoryClient) GetRateLimit(domainName string) (*client.RateLimit, error) {
@@ -48,6 +69,30 @@ func (f *fakeInventoryClient) ListRateLimitZones(domainName string) ([]client.Ra
 
 func (f *fakeInventoryClient) GetOriginPools(domainName string) ([]client.OriginPool, error) {
 	return f.originPools, nil
+}
+
+func (f *fakeInventoryClient) GetRPOriginConfig(domainName string) (*client.OriginConfig, error) {
+	return f.originConfig, nil
+}
+
+func (f *fakeInventoryClient) GetRPCDNCacheConfig(domainName string) (*client.CacheConfig, error) {
+	return f.cdnCacheConfig, nil
+}
+
+func (f *fakeInventoryClient) GetRPBotsConfig(domainName string) (*client.BotConfig, error) {
+	return f.botsConfig, nil
+}
+
+func (f *fakeInventoryClient) GetRPFirewallSettings(domainName string) (*client.FirewallSettings, error) {
+	return f.firewallSettings, nil
+}
+
+func (f *fakeInventoryClient) GetRPFirewallErrorPage(domainName string) (*client.FirewallErrorPage, error) {
+	return f.firewallErrorPage, nil
+}
+
+func (f *fakeInventoryClient) GetRPLuaOptions(domainName string) (*client.LuaOptions, error) {
+	return f.luaOptions, nil
 }
 
 func (f *fakeInventoryClient) ListRuleLists(domainName string) ([]client.RuleListSummary, error) {
@@ -73,7 +118,10 @@ func (f *fakeInventoryClient) ListBulkRedirectEntries(domainName, listUUID strin
 func TestCollectDomainInventory_Basic(t *testing.T) {
 	fake := &fakeInventoryClient{
 		reverseProxyConfig: &client.ReverseProxyConfig{},
+		rpSettings:         &client.ServiceSettings{},
+		rpSSLConfig:        &client.SSLConfig{},
 		transformSettings:  &client.TransformSettings{},
+		acmeSettings:       &client.AcmeSettings{},
 		rateLimit:          &client.RateLimit{},
 		rateLimitZones: []client.RateLimitZone{
 			{Name: "zone-b"},
@@ -83,6 +131,12 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 			{Tag: "pool-b"},
 			{Tag: "pool-a"},
 		},
+		originConfig:      &client.OriginConfig{},
+		cdnCacheConfig:    &client.CacheConfig{},
+		botsConfig:        &client.BotConfig{},
+		firewallSettings:  &client.FirewallSettings{},
+		firewallErrorPage: &client.FirewallErrorPage{ErrorPage: true},
+		luaOptions:        &client.LuaOptions{},
 		ruleLists: []client.RuleListSummary{
 			{UUID: "list-2", Name: "My List 2", Type: "ips"},
 			{UUID: "list-1", Name: "My List 1", Type: "ips"},
@@ -114,6 +168,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 	}
 
 	want := []ImportTarget{
+		{TypeName: "peakhour_acme_settings", Name: "acme", ImportID: "example.com"},
 		{TypeName: "peakhour_bulk_redirect_entry", Name: "br-1_entry-1", ImportID: "example.com/bulk_redirects/br-1/entries/entry-1"},
 		{TypeName: "peakhour_bulk_redirect_entry", Name: "br-1_entry-2", ImportID: "example.com/bulk_redirects/br-1/entries/entry-2"},
 		{TypeName: "peakhour_bulk_redirect_list", Name: "br-1", ImportID: "example.com/bulk_redirects/br-1"},
@@ -123,10 +178,19 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_origin_pool", Name: "pool-a", ImportID: "example.com/origins/pool-a"},
 		{TypeName: "peakhour_origin_pool", Name: "pool-b", ImportID: "example.com/origins/pool-b"},
 		{TypeName: "peakhour_rate_limit_global", Name: "global", ImportID: "example.com"},
+		{TypeName: "peakhour_rate_limit_settings", Name: "settings", ImportID: "example.com"},
 		{TypeName: "peakhour_rate_limit_zone", Name: "zone-a", ImportID: "example.com/zone-a"},
 		{TypeName: "peakhour_rate_limit_zone", Name: "zone-b", ImportID: "example.com/zone-b"},
 		{TypeName: "peakhour_reverse_proxy_config", Name: "config", ImportID: "example.com"},
 		{TypeName: "peakhour_reverse_proxy_service", Name: "rp", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_bots", Name: "bots", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_cdn_cache", Name: "cache", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_firewall_error_page", Name: "error_page", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_firewall_settings", Name: "firewall", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_lua_options", Name: "lua", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_origin_config", Name: "origin", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_settings", Name: "settings", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_ssl_config", Name: "ssl", ImportID: "example.com"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
 		{TypeName: "peakhour_rule_list", Name: "list-1", ImportID: "example.com/list-1"},

@@ -18,10 +18,19 @@ type ImportTarget struct {
 type InventoryClient interface {
 	GetDomainService(domainName, serviceType string) error
 	GetReverseProxyConfig(domainName string) (*client.ReverseProxyConfig, error)
+	GetRPSettings(domainName string) (*client.ServiceSettings, error)
+	GetRPSSLConfig(domainName string) (*client.SSLConfig, error)
 	GetTransformSettings(domainName string) (*client.TransformSettings, error)
+	GetAcmeSettings(domainName string) (*client.AcmeSettings, error)
 	GetRateLimit(domainName string) (*client.RateLimit, error)
 	ListRateLimitZones(domainName string) ([]client.RateLimitZone, error)
 	GetOriginPools(domainName string) ([]client.OriginPool, error)
+	GetRPOriginConfig(domainName string) (*client.OriginConfig, error)
+	GetRPCDNCacheConfig(domainName string) (*client.CacheConfig, error)
+	GetRPBotsConfig(domainName string) (*client.BotConfig, error)
+	GetRPFirewallSettings(domainName string) (*client.FirewallSettings, error)
+	GetRPFirewallErrorPage(domainName string) (*client.FirewallErrorPage, error)
+	GetRPLuaOptions(domainName string) (*client.LuaOptions, error)
 	ListRuleLists(domainName string) ([]client.RuleListSummary, error)
 	ListRulesInPhase(domainName, phase string) ([]client.RulePhaseSummary, error)
 	ListImageTransformPresets(domainName string) ([]client.ImageTransformPreset, error)
@@ -52,6 +61,22 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		targets = append(targets, ImportTarget{TypeName: "peakhour_reverse_proxy_config", Name: "config", ImportID: domain})
 	}
 
+	if _, err := c.GetRPSettings(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_settings", Name: "settings", ImportID: domain})
+	}
+
+	if _, err := c.GetRPSSLConfig(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_ssl_config", Name: "ssl", ImportID: domain})
+	}
+
 	if _, err := c.GetTransformSettings(domain); err != nil {
 		if !client.IsNotFoundError(err) {
 			return nil, err
@@ -60,12 +85,21 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		targets = append(targets, ImportTarget{TypeName: "peakhour_transform_settings", Name: "transforms", ImportID: domain})
 	}
 
+	if _, err := c.GetAcmeSettings(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_acme_settings", Name: "acme", ImportID: domain})
+	}
+
 	if _, err := c.GetRateLimit(domain); err != nil {
 		if !client.IsNotFoundError(err) {
 			return nil, err
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rate_limit_global", Name: "global", ImportID: domain})
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rate_limit_settings", Name: "settings", ImportID: domain})
 	}
 
 	if zones, err := c.ListRateLimitZones(domain); err != nil {
@@ -100,6 +134,54 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 				ImportID: domain + "/origins/" + p.Tag,
 			})
 		}
+	}
+
+	if _, err := c.GetRPOriginConfig(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_origin_config", Name: "origin", ImportID: domain})
+	}
+
+	if _, err := c.GetRPCDNCacheConfig(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_cdn_cache", Name: "cache", ImportID: domain})
+	}
+
+	if _, err := c.GetRPBotsConfig(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_bots", Name: "bots", ImportID: domain})
+	}
+
+	if _, err := c.GetRPFirewallSettings(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_firewall_settings", Name: "firewall", ImportID: domain})
+	}
+
+	if _, err := c.GetRPFirewallErrorPage(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_firewall_error_page", Name: "error_page", ImportID: domain})
+	}
+
+	if _, err := c.GetRPLuaOptions(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_lua_options", Name: "lua", ImportID: domain})
 	}
 
 	if lists, err := c.ListRuleLists(domain); err != nil {
