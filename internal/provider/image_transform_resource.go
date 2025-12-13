@@ -172,6 +172,7 @@ func (r *ImageTransformResource) Read(ctx context.Context, req resource.ReadRequ
 
 	// Update state
 	state.Name = types.StringValue(preset.Name)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/" + state.UUID.ValueString())
 
 	// Convert config to JSON
 	configJSON, err := json.Marshal(preset.Config)

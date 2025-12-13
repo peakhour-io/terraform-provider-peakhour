@@ -193,9 +193,11 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	// Update state
+	state.UUID = types.StringValue(rule.UUID)
 	state.Name = types.StringValue(rule.Name)
 	state.FilterStr = types.StringValue(rule.FilterStr)
 	state.Phase = types.StringValue(rule.Phase)
+	state.ID = types.StringValue(fmt.Sprintf("%s/%s/%s", state.Domain.ValueString(), rule.Phase, rule.UUID))
 	if rule.Enabled != nil {
 		state.Enabled = types.BoolValue(*rule.Enabled)
 	} else {

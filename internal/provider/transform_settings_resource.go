@@ -216,6 +216,7 @@ func (r *TransformSettingsResource) Read(ctx context.Context, req resource.ReadR
 
 	// Update state
 	r.mapSettingsToModel(ctx, settings, &state)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/transforms")
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)

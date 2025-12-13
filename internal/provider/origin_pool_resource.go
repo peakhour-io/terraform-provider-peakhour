@@ -185,6 +185,7 @@ func (r *OriginPoolResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// Update state
 	state.Tag = types.StringValue(pool.Tag)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/origins/" + pool.Tag)
 
 	// Convert addresses
 	addresses := make([]attr.Value, len(pool.Addresses))

@@ -169,6 +169,7 @@ func (r *RateLimitZoneResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Update state
 	r.updateModelFromZone(&state, zone)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/" + state.Name.ValueString())
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -220,7 +221,18 @@ func (r *RateLimitZoneResource) Delete(ctx context.Context, req resource.DeleteR
 
 func (r *RateLimitZoneResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Import format: domain/name
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	parts, err := parseCompositeID(req.ID, 2)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected import ID format 'domain/name', got %q: %s", req.ID, err),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("domain"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
 func (r *RateLimitZoneResource) buildZoneFromModel(model *RateLimitZoneResourceModel) client.RateLimitZone {

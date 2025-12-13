@@ -189,6 +189,7 @@ func (r *ReverseProxyConfigResource) Read(ctx context.Context, req resource.Read
 
 	// Update state from API response
 	r.mapConfigToModel(ctx, config, &state)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/config")
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)

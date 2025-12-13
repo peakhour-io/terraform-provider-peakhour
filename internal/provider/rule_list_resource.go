@@ -178,6 +178,7 @@ func (r *RuleListResource) Read(ctx context.Context, req resource.ReadRequest, r
 	// Update state
 	state.Name = types.StringValue(list.Name)
 	state.Type = types.StringValue(list.Type)
+	state.ID = types.StringValue(state.Domain.ValueString() + "/" + state.UUID.ValueString())
 
 	// Convert IPs
 	if len(list.IPs) > 0 {

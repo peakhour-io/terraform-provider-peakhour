@@ -122,6 +122,8 @@ func (r *ReverseProxyServiceResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	state.ID = types.StringValue(state.Domain.ValueString() + "/rp")
+
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 }
