@@ -20,12 +20,14 @@ Completed from this plan (merged):
   - `peakhour_rp_bots`
   - `peakhour_rp_threat_access_list_rule`
   - `peakhour_rp_threat_block_list`
+  - `peakhour_rp_waf_options`
+  - `peakhour_rp_waf_owasp_settings`
   - `peakhour_rp_firewall_settings`
   - `peakhour_rp_firewall_error_page`
   - `peakhour_rp_lua_options`
 - Updated onboarding inventory to include config resources (`internal/onboard/inventory.go`) (purge resources are actions and are not inventoried).
 - Extended unit/contract checks to cover spec paths and provider registration (`internal/spec/contract_test.go`).
-- Updated docs/examples for the new resources (`README.md`, `examples/full-setup/main.tf`, `examples/rate-limiting/main.tf`, `examples/cdn-purge/main.tf`, `examples/threats/main.tf`).
+- Updated docs/examples for the new resources (`README.md`, `examples/full-setup/main.tf`, `examples/rate-limiting/main.tf`, `examples/cdn-purge/main.tf`, `examples/threats/main.tf`, `examples/waf/main.tf`).
 
 ## What the Terraform provider covers today
 
@@ -43,6 +45,8 @@ The provider currently models these API areas:
 - Bots config: `peakhour_rp_bots` (`/services/rp/bots`)
 - Threat access list rules: `peakhour_rp_threat_access_list_rule` (`/services/rp/threats/access_list`)
 - Threat block list selection: `peakhour_rp_threat_block_list` (`/services/rp/threats/block_list`)
+- WAF options: `peakhour_rp_waf_options` (`/services/rp/waf`)
+- WAF OWASP settings: `peakhour_rp_waf_owasp_settings` (`/services/rp/waf/owasp`)
 - Firewall settings: `peakhour_rp_firewall_settings` (`/services/rp/firewall`)
 - Firewall error page: `peakhour_rp_firewall_error_page` (`/services/rp/firewall/error_page`)
 - Lua options: `peakhour_rp_lua_options` (`/services/rp/lua`)
@@ -101,11 +105,11 @@ What looks “vhost-ish” is split across:
 - ✅ Access list rule CRUD: `GET/PATCH/DELETE /api/v1/domains/{domain}/services/rp/threats/access_list/{rule}` (`peakhour_rp_threat_access_list_rule`)
 - ✅ Block lists selection: `GET/POST /api/v1/domains/{domain}/services/rp/threats/block_list` (`peakhour_rp_threat_block_list`)
 
-### WAF (large surface area; missing)
-- WAF options: `GET/POST /api/v1/domains/{domain}/services/rp/waf`
-- Custom rules: `.../waf/customrule*`
-- OWASP toggles/settings: `.../waf/owasp`
-- Rulesets/rulegroups/rules: `.../waf/ruleset*` and `.../waf/rule/{rule}`
+### WAF (large surface area; partial)
+- ✅ WAF options: `GET/PATCH /api/v1/domains/{domain}/services/rp/waf` (`peakhour_rp_waf_options`)
+- ✅ OWASP settings: `GET/PATCH /api/v1/domains/{domain}/services/rp/waf/owasp` (`peakhour_rp_waf_owasp_settings`)
+- ⏳ Custom rules: `.../waf/customrule*`
+- ⏳ Rulesets/rulegroups/rules: `.../waf/ruleset*` and `.../waf/rule/{rule}`
 
 ## Additional spec modules not modeled (likely separate milestones)
 
@@ -123,8 +127,9 @@ What looks “vhost-ish” is split across:
 
 ## Proposed next implementation order (remaining)
 
-1. **WAF suite**
-   - Multiple resources + reorder operations; biggest effort.
+1. **WAF suite (remaining)**
+   - Custom rules CRUD + reorder.
+   - Ruleset/rulegroup/rule toggles (enable/disable).
 
 For each new area:
 - Add `internal/client` methods + DTOs as needed.

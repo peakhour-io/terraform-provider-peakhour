@@ -395,6 +395,47 @@ See [examples/threats/main.tf](examples/threats/main.tf).
 
 ---
 
+### `peakhour_rp_waf_options`
+
+Manages WAF options for a domain.
+
+```hcl
+resource "peakhour_rp_waf_options" "example" {
+  domain = "example.com"
+
+  waf_mode                        = "enabled"
+  waf_ruleset                     = "owaspv33"
+  waf_set_exposed_password_header = true
+}
+```
+
+See [examples/waf/main.tf](examples/waf/main.tf).
+
+---
+
+### `peakhour_rp_waf_owasp_settings`
+
+Manages WAF OWASP settings for a domain (as JSON).
+
+```hcl
+resource "peakhour_rp_waf_owasp_settings" "example" {
+  domain = "example.com"
+
+  settings_json = jsonencode({
+    methods = {
+      allowed_methods = ["GET", "HEAD", "POST", "OPTIONS"]
+    }
+    protocol = {
+      max_num_args = 100
+    }
+  })
+}
+```
+
+See [examples/waf/main.tf](examples/waf/main.tf).
+
+---
+
 ### `peakhour_rp_firewall_settings`
 
 Manages firewall settings such as challenge cookie key configuration.
