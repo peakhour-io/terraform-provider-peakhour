@@ -30,6 +30,8 @@ type InventoryClient interface {
 	GetRPOriginConfig(domainName string) (*client.OriginConfig, error)
 	GetRPCDNCacheConfig(domainName string) (*client.CacheConfig, error)
 	GetRPBotsConfig(domainName string) (*client.BotConfig, error)
+	ListThreatAccessListRules(domainName string) ([]client.AccessListRule, error)
+	ListThreatBlockLists(domainName string) ([]client.Blocklist, error)
 	GetRPFirewallSettings(domainName string) (*client.FirewallSettings, error)
 	GetRPFirewallErrorPage(domainName string) (*client.FirewallErrorPage, error)
 	GetRPLuaOptions(domainName string) (*client.LuaOptions, error)
@@ -176,6 +178,31 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_bots", Name: "bots", ImportID: domain})
+	}
+
+	if rules, err := c.ListThreatAccessListRules(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		for _, rule := range rules {
+			if rule.UUID == "" {
+				continue
+			}
+			targets = append(targets, ImportTarget{
+				TypeName: "peakhour_rp_threat_access_list_rule",
+				Name:     rule.UUID,
+				ImportID: fmt.Sprintf("%s/access_list/%s", domain, rule.UUID),
+			})
+		}
+	}
+
+	if _, err := c.ListThreatBlockLists(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_threat_block_list", Name: "threat_block_list", ImportID: domain})
 	}
 
 	if _, err := c.GetRPFirewallSettings(domain); err != nil {

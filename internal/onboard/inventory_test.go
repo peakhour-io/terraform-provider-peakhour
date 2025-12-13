@@ -25,6 +25,8 @@ type fakeInventoryClient struct {
 	originConfig      *client.OriginConfig
 	cdnCacheConfig    *client.CacheConfig
 	botsConfig        *client.BotConfig
+	threatAccessRules []client.AccessListRule
+	threatBlockLists  []client.Blocklist
 	firewallSettings  *client.FirewallSettings
 	firewallErrorPage *client.FirewallErrorPage
 	luaOptions        *client.LuaOptions
@@ -93,6 +95,14 @@ func (f *fakeInventoryClient) GetRPBotsConfig(domainName string) (*client.BotCon
 	return f.botsConfig, nil
 }
 
+func (f *fakeInventoryClient) ListThreatAccessListRules(domainName string) ([]client.AccessListRule, error) {
+	return f.threatAccessRules, nil
+}
+
+func (f *fakeInventoryClient) ListThreatBlockLists(domainName string) ([]client.Blocklist, error) {
+	return f.threatBlockLists, nil
+}
+
 func (f *fakeInventoryClient) GetRPFirewallSettings(domainName string) (*client.FirewallSettings, error) {
 	return f.firewallSettings, nil
 }
@@ -143,9 +153,16 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 			{Tag: "pool-b"},
 			{Tag: "pool-a"},
 		},
-		originConfig:      &client.OriginConfig{},
-		cdnCacheConfig:    &client.CacheConfig{},
-		botsConfig:        &client.BotConfig{},
+		originConfig:   &client.OriginConfig{},
+		cdnCacheConfig: &client.CacheConfig{},
+		botsConfig:     &client.BotConfig{},
+		threatAccessRules: []client.AccessListRule{
+			{UUID: "al-2"},
+			{UUID: "al-1"},
+		},
+		threatBlockLists: []client.Blocklist{
+			{Name: "tor", Enabled: true},
+		},
 		firewallSettings:  &client.FirewallSettings{},
 		firewallErrorPage: &client.FirewallErrorPage{ErrorPage: true},
 		luaOptions:        &client.LuaOptions{},
@@ -205,6 +222,9 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_settings", Name: "settings", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_ssl_certificate", Name: "ssl_certificate", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_ssl_config", Name: "ssl", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-1", ImportID: "example.com/access_list/al-1"},
+		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-2", ImportID: "example.com/access_list/al-2"},
+		{TypeName: "peakhour_rp_threat_block_list", Name: "threat_block_list", ImportID: "example.com"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
 		{TypeName: "peakhour_rule_list", Name: "list-1", ImportID: "example.com/list-1"},
