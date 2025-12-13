@@ -12,6 +12,11 @@ func (c *Client) GetRateLimit(domainName string) (*RateLimit, error) {
 	return &result, nil
 }
 
+// UpdateRateLimitSettings updates the rate limit mode configuration for a domain.
+func (c *Client) UpdateRateLimitSettings(domainName string, settings RateLimitSettings) error {
+	return c.Post(fmt.Sprintf("/api/v1/domains/%s/services/rp/rate_limit", domainName), settings, nil)
+}
+
 // UpdateRateLimitGlobal updates the global rate limiting configuration for a domain.
 func (c *Client) UpdateRateLimitGlobal(domainName string, global RateLimitGlobal) error {
 	return c.Post(fmt.Sprintf("/api/v1/domains/%s/services/rp/rate_limit/global", domainName), global, nil)

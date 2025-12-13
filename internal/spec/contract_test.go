@@ -125,6 +125,35 @@ func TestProviderResources_IncludeBulkRedirectResources(t *testing.T) {
 	}
 }
 
+func TestProviderResources_IncludeConfigBacklogResources(t *testing.T) {
+	p := provider.New("test")()
+
+	names := map[string]struct{}{}
+	for _, factory := range p.Resources(context.Background()) {
+		res := factory()
+		var resp resource.MetadataResponse
+		res.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "peakhour"}, &resp)
+		names[resp.TypeName] = struct{}{}
+	}
+
+	for _, want := range []string{
+		"peakhour_rate_limit_settings",
+		"peakhour_rp_settings",
+		"peakhour_rp_ssl_config",
+		"peakhour_acme_settings",
+		"peakhour_rp_origin_config",
+		"peakhour_rp_cdn_cache",
+		"peakhour_rp_bots",
+		"peakhour_rp_firewall_settings",
+		"peakhour_rp_firewall_error_page",
+		"peakhour_rp_lua_options",
+	} {
+		if _, ok := names[want]; !ok {
+			t.Fatalf("provider should register %s resource, got %v", want, sortedKeys(names))
+		}
+	}
+}
+
 func TestRateLimitGlobalSchema_Attributes(t *testing.T) {
 	res := getResourceByTypeName(t, "peakhour_rate_limit_global")
 
@@ -164,6 +193,29 @@ func TestSpecContract_BulkRedirectPathsExist(t *testing.T) {
 	} {
 		if _, ok := spec.Paths[path]; !ok {
 			t.Fatalf("spec missing bulk redirect path %q", path)
+		}
+	}
+}
+
+func TestSpecContract_ConfigPathsExist(t *testing.T) {
+	spec := loadSpec(t)
+
+	for _, path := range []string{
+		"/api/v1/domains/{domain}/services/rp/settings",
+		"/api/v1/domains/{domain}/services/rp/ssl",
+		"/api/v1/domains/{domain}/services/rp/ssl/certificate",
+		"/api/v1/domains/{domain}/services/acme/settings",
+		"/api/v1/domains/{domain}/services/acme/certificate",
+		"/api/v1/domains/{domain}/services/rp/origin",
+		"/api/v1/domains/{domain}/services/rp/cdn",
+		"/api/v1/domains/{domain}/services/rp/bots",
+		"/api/v1/domains/{domain}/services/rp/firewall",
+		"/api/v1/domains/{domain}/services/rp/firewall/error_page",
+		"/api/v1/domains/{domain}/services/rp/lua",
+		"/api/v1/domains/{domain}/services/rp/rate_limit",
+	} {
+		if _, ok := spec.Paths[path]; !ok {
+			t.Fatalf("spec missing path %q", path)
 		}
 	}
 }

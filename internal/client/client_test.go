@@ -478,3 +478,256 @@ func TestClient_BulkRedirectEndpoints(t *testing.T) {
 		t.Fatalf("DeleteBulkRedirectList failed: %v", err)
 	}
 }
+
+// Test 12: Config endpoints should use spec paths/methods
+func TestClient_ConfigEndpoints(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/domains/example.com/services/rp/settings":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"notification_emails": []string{"ops@example.com"},
+					"quickstart":          true,
+					"ipv4_address":        "192.0.2.10",
+					"ipv6_address":        "2001:db8::10",
+					"cname":               "example.peakhour.io",
+				})
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/ssl":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]interface{}{"ciphers": "intermediate"})
+			case "PUT":
+				var body SSLConfig
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if body.Ciphers == "" {
+					t.Errorf("expected ciphers in request body")
+				}
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/acme/settings":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"domain_names": []string{"example.com", "www.example.com"},
+				})
+			case "PUT":
+				var body AcmeSettings
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/origin":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"ssl_mode":        "https",
+					"origin_downtime": nil,
+					"origin_request_headers": map[string]any{
+						"blocklists":   true,
+						"client_proxy": nil,
+						"geoip":        false,
+					},
+				})
+			case "POST":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/cdn":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"cache_enabled":              true,
+					"cdn_query_mode":             "full",
+					"cdn_remove_query_args":      []string{"utm_source"},
+					"cache_tag_header":           "X-Cache-Tag",
+					"cache_tag_header_separator": ",",
+				})
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/bots":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"bots_inject_js":     true,
+					"bots_verify_list":   []string{"google"},
+					"bots_verify_rdns":   true,
+					"bots_verify_invert": nil,
+				})
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/firewall":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"challenge_cookie_key": []string{"ip"},
+				})
+			case "POST":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/firewall/error_page":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"error_page": true,
+				})
+			case "PUT":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/lua":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"lua_enabled":                true,
+					"lua_request_filter":         "return true",
+					"lua_response_filter":        nil,
+					"lua_origin_request_filter":  nil,
+					"lua_origin_response_filter": nil,
+					"lua_origin_selector":        nil,
+					"lua_origin_pool_selector":   nil,
+				})
+			case "PUT":
+				var body LuaOptions
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				w.WriteHeader(http.StatusOK)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/rate_limit":
+			if r.Method != "POST" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			var body RateLimitSettings
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if len(body.Mode) == 0 {
+				t.Errorf("expected mode in request body")
+			}
+			w.WriteHeader(http.StatusOK)
+			return
+
+		default:
+			t.Errorf("Unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	c := NewClient("test-key", server.URL)
+
+	if _, err := c.GetRPSettings("example.com"); err != nil {
+		t.Fatalf("GetRPSettings failed: %v", err)
+	}
+	if err := c.UpdateRPSettings("example.com", map[string]any{"quickstart": nil}); err != nil {
+		t.Fatalf("UpdateRPSettings failed: %v", err)
+	}
+
+	if _, err := c.GetRPSSLConfig("example.com"); err != nil {
+		t.Fatalf("GetRPSSLConfig failed: %v", err)
+	}
+	if err := c.UpdateRPSSLConfig("example.com", SSLConfig{Ciphers: "modern"}); err != nil {
+		t.Fatalf("UpdateRPSSLConfig failed: %v", err)
+	}
+
+	if _, err := c.GetAcmeSettings("example.com"); err != nil {
+		t.Fatalf("GetAcmeSettings failed: %v", err)
+	}
+	if err := c.UpdateAcmeSettings("example.com", AcmeSettings{DomainNames: []string{"example.com"}}); err != nil {
+		t.Fatalf("UpdateAcmeSettings failed: %v", err)
+	}
+
+	if _, err := c.GetRPOriginConfig("example.com"); err != nil {
+		t.Fatalf("GetRPOriginConfig failed: %v", err)
+	}
+	if err := c.UpdateRPOriginConfig("example.com", map[string]any{"ssl_mode": "https"}); err != nil {
+		t.Fatalf("UpdateRPOriginConfig failed: %v", err)
+	}
+
+	if _, err := c.GetRPCDNCacheConfig("example.com"); err != nil {
+		t.Fatalf("GetRPCDNCacheConfig failed: %v", err)
+	}
+	if err := c.UpdateRPCDNCacheConfig("example.com", map[string]any{"cache_enabled": true}); err != nil {
+		t.Fatalf("UpdateRPCDNCacheConfig failed: %v", err)
+	}
+
+	if _, err := c.GetRPBotsConfig("example.com"); err != nil {
+		t.Fatalf("GetRPBotsConfig failed: %v", err)
+	}
+	if err := c.UpdateRPBotsConfig("example.com", map[string]any{"bots_verify_rdns": false}); err != nil {
+		t.Fatalf("UpdateRPBotsConfig failed: %v", err)
+	}
+
+	if _, err := c.GetRPFirewallSettings("example.com"); err != nil {
+		t.Fatalf("GetRPFirewallSettings failed: %v", err)
+	}
+	if err := c.UpdateRPFirewallSettings("example.com", map[string]any{"challenge_cookie_key": []string{"ip"}}); err != nil {
+		t.Fatalf("UpdateRPFirewallSettings failed: %v", err)
+	}
+
+	if _, err := c.GetRPFirewallErrorPage("example.com"); err != nil {
+		t.Fatalf("GetRPFirewallErrorPage failed: %v", err)
+	}
+	if err := c.UpdateRPFirewallErrorPage("example.com", map[string]any{"error_page": nil}); err != nil {
+		t.Fatalf("UpdateRPFirewallErrorPage failed: %v", err)
+	}
+
+	if _, err := c.GetRPLuaOptions("example.com"); err != nil {
+		t.Fatalf("GetRPLuaOptions failed: %v", err)
+	}
+	if err := c.UpdateRPLuaOptions("example.com", LuaOptions{}); err != nil {
+		t.Fatalf("UpdateRPLuaOptions failed: %v", err)
+	}
+
+	if err := c.UpdateRateLimitSettings("example.com", RateLimitSettings{Mode: []string{"zone"}}); err != nil {
+		t.Fatalf("UpdateRateLimitSettings failed: %v", err)
+	}
+}

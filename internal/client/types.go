@@ -202,3 +202,115 @@ type ImageTransformPresetUpdate struct {
 type ImageTransformPresetList struct {
 	Presets []ImageTransformPreset `json:"presets"`
 }
+
+// Reverse proxy settings types
+type ServiceSettings struct {
+	NotificationEmails []string `json:"notification_emails"`
+	Quickstart         *bool    `json:"quickstart"`
+	IPv4Address        *string  `json:"ipv4_address"`
+	IPv6Address        *string  `json:"ipv6_address"`
+	CNAME              *string  `json:"cname"`
+}
+
+// SSL / TLS types
+type SSLConfig struct {
+	Ciphers string `json:"ciphers"`
+}
+
+type SSLCertificateInfo struct {
+	CN        string `json:"cn"`
+	AltName   string `json:"alt_name"`
+	Issuer    string `json:"issuer"`
+	ValidFrom string `json:"valid_from"`
+	ValidTo   string `json:"valid_to"`
+}
+
+type SSLCertificate struct {
+	Certificate SSLCertificateInfo `json:"certificate"`
+}
+
+type SSLCertificateAdd struct {
+	Verify      *bool  `json:"verify,omitempty"`
+	Certificate string `json:"certificate"`
+	PrivateKey  string `json:"private_key"`
+}
+
+// ACME types
+type AcmeSettings struct {
+	DomainNames []string `json:"domain_names"`
+}
+
+type AcmeCertificate struct {
+	State          *string `json:"state"`
+	NotBefore      *string `json:"not_before"`
+	NotAfter       *string `json:"not_after"`
+	CertificatePEM *string `json:"certificate_pem"`
+}
+
+// CDN cache types
+type CacheConfig struct {
+	CacheEnabled                   *bool    `json:"cache_enabled"`
+	SoftPurge                      *bool    `json:"soft_purge"`
+	CDNQueryMode                   *string  `json:"cdn_query_mode"`
+	BrowserTTLSec                  *int     `json:"browser_ttl_sec"`
+	EdgeTTLSec                     *int     `json:"edge_ttl_sec"`
+	CacheImplicitTTL               *int     `json:"cache_implicit_ttl"`
+	CacheStoreRequireCacheControl  *bool    `json:"cache_store_require_cache_control"`
+	CacheStripCookies              *bool    `json:"cache_strip_cookies"`
+	CacheStripSetCookies           *bool    `json:"cache_strip_set_cookies"`
+	CacheVaryUAMode                *string  `json:"cache_vary_ua_mode"`
+	CDNIgnoreInvalidate            *bool    `json:"cdn_ignore_invalidate"`
+	CDNIgnoreVaryUserAgent         *bool    `json:"cdn_ignore_vary_user_agent"`
+	CacheIgnoreRequestCacheControl *bool    `json:"cache_ignore_request_cache_control"`
+	CDNServeStale                  *bool    `json:"cdn_serve_stale"`
+	CDNSkipCookie                  *string  `json:"cdn_skip_cookie"`
+	CacheTagHeader                 *string  `json:"cache_tag_header"`
+	CacheTagHeaderSeparator        *string  `json:"cache_tag_header_separator"`
+	CDNRemoveQueryArgs             []string `json:"cdn_remove_query_args"`
+}
+
+// Bots types
+type BotConfig struct {
+	BotsInjectJS     *bool    `json:"bots_inject_js"`
+	BotsVerifyList   []string `json:"bots_verify_list"`
+	BotsVerifyRDNS   *bool    `json:"bots_verify_rdns"`
+	BotsVerifyInvert *bool    `json:"bots_verify_invert"`
+}
+
+// Origin config types (distinct from origin pools)
+type OriginRequestHeaders struct {
+	Blocklists  *bool `json:"blocklists"`
+	ClientProxy *bool `json:"client_proxy"`
+	GeoIP       *bool `json:"geoip"`
+}
+
+type OriginConfig struct {
+	SSLMode                     *string               `json:"ssl_mode"`
+	OriginDowntime              *int                  `json:"origin_downtime"`
+	OriginErrorsConnRefused     *int                  `json:"origin_errors_conn_refused"`
+	OriginErrorsConnReset       *int                  `json:"origin_errors_conn_reset"`
+	OriginErrorsConnTimeout     *int                  `json:"origin_errors_conn_timeout"`
+	OriginErrorsServerError     *int                  `json:"origin_errors_server_error"`
+	OriginErrorsResponseTimeout *int                  `json:"origin_errors_response_timeout"`
+	OriginRequestHeaders        *OriginRequestHeaders `json:"origin_request_headers"`
+}
+
+// Firewall types
+type FirewallSettings struct {
+	ChallengeCookieKey []string `json:"challenge_cookie_key"`
+}
+
+type FirewallErrorPage struct {
+	ErrorPage bool `json:"error_page"`
+}
+
+// Lua types
+type LuaOptions struct {
+	LuaEnabled              *bool   `json:"lua_enabled"`
+	LuaRequestFilter        *string `json:"lua_request_filter"`
+	LuaResponseFilter       *string `json:"lua_response_filter"`
+	LuaOriginRequestFilter  *string `json:"lua_origin_request_filter"`
+	LuaOriginResponseFilter *string `json:"lua_origin_response_filter"`
+	LuaOriginSelector       *string `json:"lua_origin_selector"`
+	LuaOriginPoolSelector   *string `json:"lua_origin_pool_selector"`
+}
