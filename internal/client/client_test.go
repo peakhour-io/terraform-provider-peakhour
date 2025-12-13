@@ -260,17 +260,31 @@ func TestClient_CancelledContextAbortsRequest(t *testing.T) {
 // Test 8: Authorization header should be set
 func TestClient_SetsAuthorizationHeader(t *testing.T) {
 	var capturedAuth string
+	var capturedUA string
+	var capturedClientHeader string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
+		capturedUA = r.Header.Get("User-Agent")
+		capturedClientHeader = r.Header.Get("X-Peakhour-Client")
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	client := NewClient("my-secret-key", server.URL)
+	client.UserAgent = "terraform-provider-peakhour/test"
+	client.Headers = map[string]string{
+		"X-Peakhour-Client": client.UserAgent,
+	}
 	client.Get("/test", nil)
 
 	if capturedAuth != "Bearer my-secret-key" {
 		t.Errorf("Authorization header = %q, want %q", capturedAuth, "Bearer my-secret-key")
+	}
+	if capturedUA != "terraform-provider-peakhour/test" {
+		t.Errorf("User-Agent header = %q, want %q", capturedUA, "terraform-provider-peakhour/test")
+	}
+	if capturedClientHeader != "terraform-provider-peakhour/test" {
+		t.Errorf("X-Peakhour-Client header = %q, want %q", capturedClientHeader, "terraform-provider-peakhour/test")
 	}
 }
 

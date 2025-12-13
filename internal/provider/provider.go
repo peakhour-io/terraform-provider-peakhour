@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -79,6 +80,14 @@ func (p *PeakhourProvider) Configure(ctx context.Context, req provider.Configure
 
 	// Create API client
 	c := client.NewClient(apiKey, baseURL)
+	if p.version != "" {
+		c.UserAgent = fmt.Sprintf("terraform-provider-peakhour/%s", p.version)
+	} else {
+		c.UserAgent = "terraform-provider-peakhour"
+	}
+	c.Headers = map[string]string{
+		"X-Peakhour-Client": c.UserAgent,
+	}
 
 	resp.DataSourceData = c
 	resp.ResourceData = c

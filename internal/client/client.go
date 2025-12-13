@@ -17,6 +17,8 @@ type Client struct {
 	APIKey     string
 	BaseURL    string
 	HTTPClient *http.Client
+	UserAgent  string
+	Headers    map[string]string
 }
 
 type APIError struct {
@@ -145,6 +147,15 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	if c.UserAgent != "" {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
+	for k, v := range c.Headers {
+		if v == "" {
+			continue
+		}
+		req.Header.Set(k, v)
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
