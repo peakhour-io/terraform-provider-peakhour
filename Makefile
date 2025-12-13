@@ -1,4 +1,4 @@
-.PHONY: build install test testacc clean fmt vet lint
+.PHONY: build install test testacc clean fmt vet lint onboard
 
 build:
 	go build -o terraform-provider-peakhour
@@ -27,3 +27,6 @@ clean:
 
 lint: fmt vet
 	go mod tidy
+
+onboard:
+	go build -o peakhour-tf-onboard ./cmd/peakhour-tf-onboard
