@@ -38,6 +38,7 @@ type InventoryClient interface {
 	GetRPWAFOptions(domainName string) (*client.WAFOptions, error)
 	GetRPWAFOWASPSettings(domainName string) (map[string]any, error)
 	ListRPWAFCustomRules(domainName string) ([]client.WAFCustomRule, error)
+	ListRPWAFRuleGroups(domainName string, ruleset string) ([]client.WAFRuleGroup, error)
 	ListRuleLists(domainName string) ([]client.RuleListSummary, error)
 	ListRulesInPhase(domainName, phase string) ([]client.RulePhaseSummary, error)
 	ListImageTransformPresets(domainName string) ([]client.ImageTransformPreset, error)
@@ -232,12 +233,37 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_lua_options", Name: "lua", ImportID: domain})
 	}
 
-	if _, err := c.GetRPWAFOptions(domain); err != nil {
+	wafOptions, err := c.GetRPWAFOptions(domain)
+	if err != nil {
 		if !client.IsNotFoundError(err) {
 			return nil, err
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: domain})
+
+		if wafOptions != nil && wafOptions.WAFRuleset != nil && *wafOptions.WAFRuleset != "" {
+			ruleset := *wafOptions.WAFRuleset
+			if groups, err := c.ListRPWAFRuleGroups(domain, ruleset); err != nil {
+				if !client.IsNotFoundError(err) {
+					return nil, err
+				}
+			} else {
+				for _, g := range groups {
+					if g.FileName == "" {
+						continue
+					}
+					// Only emit toggles for non-default behavior; most rulesets have a large number of groups.
+					if g.Enabled {
+						continue
+					}
+					targets = append(targets, ImportTarget{
+						TypeName: "peakhour_rp_waf_rule_group",
+						Name:     fmt.Sprintf("%s_%s", ruleset, g.FileName),
+						ImportID: fmt.Sprintf("%s/ruleset/%s/rulegroup/%s", domain, ruleset, g.FileName),
+					})
+				}
+			}
+		}
 	}
 
 	if _, err := c.GetRPWAFOWASPSettings(domain); err != nil {

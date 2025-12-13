@@ -33,6 +33,7 @@ type fakeInventoryClient struct {
 	wafOptions        *client.WAFOptions
 	wafOWASPSettings  map[string]any
 	wafCustomRules    []client.WAFCustomRule
+	wafRuleGroups     map[string][]client.WAFRuleGroup
 	ruleLists         []client.RuleListSummary
 	rulesByPhase      map[string][]client.RulePhaseSummary
 
@@ -130,6 +131,10 @@ func (f *fakeInventoryClient) ListRPWAFCustomRules(domainName string) ([]client.
 	return f.wafCustomRules, nil
 }
 
+func (f *fakeInventoryClient) ListRPWAFRuleGroups(domainName string, ruleset string) ([]client.WAFRuleGroup, error) {
+	return f.wafRuleGroups[ruleset], nil
+}
+
 func (f *fakeInventoryClient) ListRuleLists(domainName string) ([]client.RuleListSummary, error) {
 	return f.ruleLists, nil
 }
@@ -151,6 +156,8 @@ func (f *fakeInventoryClient) ListBulkRedirectEntries(domainName, listUUID strin
 }
 
 func TestCollectDomainInventory_Basic(t *testing.T) {
+	wafRuleset := "owaspv33"
+
 	fake := &fakeInventoryClient{
 		reverseProxyConfig: &client.ReverseProxyConfig{},
 		rpSettings:         &client.ServiceSettings{},
@@ -181,11 +188,17 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		firewallSettings:  &client.FirewallSettings{},
 		firewallErrorPage: &client.FirewallErrorPage{ErrorPage: true},
 		luaOptions:        &client.LuaOptions{},
-		wafOptions:        &client.WAFOptions{},
+		wafOptions:        &client.WAFOptions{WAFRuleset: &wafRuleset},
 		wafOWASPSettings:  map[string]any{},
 		wafCustomRules: []client.WAFCustomRule{
 			{UUID: "wafcr-2"},
 			{UUID: "wafcr-1"},
+		},
+		wafRuleGroups: map[string][]client.WAFRuleGroup{
+			wafRuleset: {
+				{FileName: "REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf", Enabled: true},
+				{FileName: "REQUEST-901-INITIALIZATION.conf", Enabled: false},
+			},
 		},
 		ruleLists: []client.RuleListSummary{
 			{UUID: "list-2", Name: "My List 2", Type: "ips"},
@@ -250,6 +263,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_waf_custom_rule", Name: "wafcr-2", ImportID: "example.com/customrule/wafcr-2"},
 		{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_waf_rule_group", Name: "owaspv33_REQUEST-901-INITIALIZATION.conf", ImportID: "example.com/ruleset/owaspv33/rulegroup/REQUEST-901-INITIALIZATION.conf"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
 		{TypeName: "peakhour_rule_list", Name: "list-1", ImportID: "example.com/list-1"},
