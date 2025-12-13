@@ -24,6 +24,14 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
+	type errorPayload struct {
+		Error string `json:"error"`
+	}
+
+	var payload errorPayload
+	if err := json.Unmarshal([]byte(e.Body), &payload); err == nil && payload.Error != "" {
+		return fmt.Sprintf("API error (status %d): %s", e.StatusCode, payload.Error)
+	}
 	return fmt.Sprintf("API error (status %d): %s", e.StatusCode, e.Body)
 }
 
