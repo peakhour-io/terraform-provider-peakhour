@@ -35,9 +35,10 @@ else
   rm -rf .toolchains/go
   pushd .toolchains/tmp >/dev/null
     rm -f "${TAR}" "${TAR}.sha256"
-    curl -fsSLo "${TAR}" "https://go.dev/dl/${TAR}"
-    curl -fsSLo "${TAR}.sha256" "https://go.dev/dl/${TAR}.sha256"
-    sha256sum -c "${TAR}.sha256"
+    curl -fsSLo "${TAR}" "https://dl.google.com/go/${TAR}"
+    curl -fsSLo "${TAR}.sha256" "https://dl.google.com/go/${TAR}.sha256"
+    GO_SHA="$(tr -d '\n' < "${TAR}.sha256")"
+    echo "${GO_SHA}  ${TAR}" | sha256sum -c -
     tar -C .. -xzf "${TAR}"
   popd >/dev/null
 fi
