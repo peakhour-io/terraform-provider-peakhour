@@ -1,0 +1,10 @@
+terraform {
+  required_providers {
+    peakhour = {
+      source = "peakhour-io/peakhour"
+    }
+  }
+}
+
+provider "peakhour" {}
+

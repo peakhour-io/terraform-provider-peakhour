@@ -1,0 +1,25 @@
+import {
+  to = peakhour_domain.domain
+  id = "example.com"
+}
+
+import {
+  to = peakhour_origin_pool.pool
+  id = "example.com/origins/123Pool"
+}
+
+import {
+  to = peakhour_rate_limit_zone.zone_a
+  id = "example.com/zone-a"
+}
+
+import {
+  to = peakhour_rule_list.foo_bar
+  id = "example.com/list-1"
+}
+
+import {
+  to = peakhour_rule_list.foo_bar_2
+  id = "example.com/list-2"
+}
+
