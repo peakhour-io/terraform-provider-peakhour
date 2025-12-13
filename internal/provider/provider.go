@@ -92,6 +92,7 @@ func (p *PeakhourProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewOriginPoolResource,
 		NewTransformSettingsResource,
 		NewRuleResource,
+		NewRateLimitGlobalResource,
 		NewRateLimitZoneResource,
 		NewRuleListResource,
 		NewImageTransformResource,

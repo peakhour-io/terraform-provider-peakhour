@@ -2,6 +2,21 @@ package client
 
 import "fmt"
 
+// GetRateLimit retrieves the full rate limit configuration (global + zones) for a domain.
+func (c *Client) GetRateLimit(domainName string) (*RateLimit, error) {
+	var result RateLimit
+	err := c.Get(fmt.Sprintf("/api/v1/domains/%s/services/rp/rate_limit", domainName), &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// UpdateRateLimitGlobal updates the global rate limiting configuration for a domain.
+func (c *Client) UpdateRateLimitGlobal(domainName string, global RateLimitGlobal) error {
+	return c.Post(fmt.Sprintf("/api/v1/domains/%s/services/rp/rate_limit/global", domainName), global, nil)
+}
+
 // ListRateLimitZones retrieves all rate limit zones for a domain
 func (c *Client) ListRateLimitZones(domainName string) ([]RateLimitZone, error) {
 	var result []RateLimitZone

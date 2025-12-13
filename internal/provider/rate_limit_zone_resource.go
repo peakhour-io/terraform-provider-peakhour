@@ -30,7 +30,6 @@ type RateLimitZoneResourceModel struct {
 	Domain                    types.String `tfsdk:"domain"`
 	Name                      types.String `tfsdk:"name"`
 	BlockDurationSec          types.Int64  `tfsdk:"block_duration_sec"`
-	ConcurrentConnections     types.Int64  `tfsdk:"concurrent_connections"`
 	ConnectionsMax            types.Int64  `tfsdk:"connections_max"`
 	ConnectionsIntervalSec    types.Int64  `tfsdk:"connections_interval_sec"`
 	RequestsMax               types.Int64  `tfsdk:"requests_max"`
@@ -70,10 +69,6 @@ func (r *RateLimitZoneResource) Schema(ctx context.Context, req resource.SchemaR
 			},
 			"block_duration_sec": schema.Int64Attribute{
 				Description: "How long to block when limit exceeded (seconds).",
-				Optional:    true,
-			},
-			"concurrent_connections": schema.Int64Attribute{
-				Description: "Maximum concurrent connections.",
 				Optional:    true,
 			},
 			"connections_max": schema.Int64Attribute{
@@ -237,10 +232,6 @@ func (r *RateLimitZoneResource) buildZoneFromModel(model *RateLimitZoneResourceM
 		v := int(model.BlockDurationSec.ValueInt64())
 		zone.BlockDurationSec = &v
 	}
-	if !model.ConcurrentConnections.IsNull() {
-		v := int(model.ConcurrentConnections.ValueInt64())
-		zone.ConcurrentConnections = &v
-	}
 	if !model.ConnectionsMax.IsNull() {
 		v := int(model.ConnectionsMax.ValueInt64())
 		zone.ConnectionsMax = &v
@@ -276,12 +267,6 @@ func (r *RateLimitZoneResource) updateModelFromZone(model *RateLimitZoneResource
 		model.BlockDurationSec = types.Int64Value(int64(*zone.BlockDurationSec))
 	} else {
 		model.BlockDurationSec = types.Int64Null()
-	}
-
-	if zone.ConcurrentConnections != nil {
-		model.ConcurrentConnections = types.Int64Value(int64(*zone.ConcurrentConnections))
-	} else {
-		model.ConcurrentConnections = types.Int64Null()
 	}
 
 	if zone.ConnectionsMax != nil {

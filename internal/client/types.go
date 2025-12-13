@@ -65,6 +65,10 @@ type ReverseProxyConfig struct {
 	RedirectStatusCode *int      `json:"redirect_status_code,omitempty"`
 }
 
+type RawConfig struct {
+	Config map[string]any `json:"config"`
+}
+
 // Transform settings types
 type TransformSettings struct {
 	TransformHTML               *bool    `json:"transform_html,omitempty"`
@@ -123,7 +127,6 @@ type UUIDResult struct {
 type RateLimitZone struct {
 	Name                      string `json:"name"`
 	BlockDurationSec          *int   `json:"block_duration_sec,omitempty"`
-	ConcurrentConnections     *int   `json:"concurrent_connections,omitempty"`
 	ConnectionsMax            *int   `json:"connections_max,omitempty"`
 	ConnectionsIntervalSec    *int   `json:"connections_interval_sec,omitempty"`
 	RequestsMax               *int   `json:"requests_max,omitempty"`

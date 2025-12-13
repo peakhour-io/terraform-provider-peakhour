@@ -3,8 +3,8 @@ package client
 import "fmt"
 
 // GetRPConfig retrieves the reverse proxy raw configuration
-func (c *Client) GetRPConfig(domainName string) (*ReverseProxyConfig, error) {
-	var result ReverseProxyConfig
+func (c *Client) GetRPConfig(domainName string) (*RawConfig, error) {
+	var result RawConfig
 	err := c.Get(fmt.Sprintf("/api/v1/domains/%s/services/rp/config", domainName), &result)
 	if err != nil {
 		return nil, err

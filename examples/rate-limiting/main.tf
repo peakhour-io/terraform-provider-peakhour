@@ -68,9 +68,8 @@ resource "peakhour_rate_limit_zone" "error_monitor" {
 }
 
 # Example 4: Global concurrent connections limit
-resource "peakhour_rate_limit_zone" "global_connections" {
+resource "peakhour_rate_limit_global" "global" {
   domain = peakhour_domain.example.name
-  name   = "connection_limit"
 
   # Maximum 1000 concurrent connections
   concurrent_connections = 1000

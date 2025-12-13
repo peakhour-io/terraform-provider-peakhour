@@ -255,7 +255,9 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 				t.Errorf("Expected GET for config")
 			}
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"websocket": true,
+				"config": map[string]interface{}{
+					"websocket": true,
+				},
 			})
 		case "/api/v1/domains/example.com/image-transforms":
 			if r.Method == "GET" {
@@ -309,8 +311,8 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetRPConfig failed: %v", err)
 	}
-	if rpConfig.Websocket == nil || !*rpConfig.Websocket {
-		t.Error("Expected Websocket to be true")
+	if rpConfig.Config["websocket"] != true {
+		t.Errorf("Expected Config[websocket] to be true, got %v", rpConfig.Config["websocket"])
 	}
 
 	// Test ListImageTransformPresets

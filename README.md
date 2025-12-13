@@ -309,7 +309,6 @@ resource "peakhour_rule" "api_ratelimit" {
 - `domain` (Required, String) - Domain name
 - `name` (Required, String) - Zone name (used to reference in rules)
 - `block_duration_sec` (Optional, Number) - How long to block when limit exceeded (seconds)
-- `concurrent_connections` (Optional, Number) - Maximum concurrent connections
 - `connections_max` (Optional, Number) - Maximum connections in interval
 - `connections_interval_sec` (Optional, Number) - Time window for connection limit (seconds)
 - `requests_max` (Optional, Number) - Maximum requests in interval
@@ -321,6 +320,23 @@ resource "peakhour_rule" "api_ratelimit" {
 - `id` (String) - Zone identifier (domain/name)
 
 See [examples/rate-limiting/main.tf](examples/rate-limiting/main.tf) for detailed examples.
+
+---
+
+### `peakhour_rate_limit_global`
+
+Manages global rate limiting settings for a domain. Global settings are not tied to rate limit zones.
+
+**Arguments:**
+- `domain` (Required, String) - Domain name
+- `block_duration_sec` (Optional, Number) - How long to block when limit exceeded (seconds)
+- `concurrent_connections` (Optional, Number) - Maximum concurrent connections
+- `connections_max` (Optional, Number) - Maximum connections in interval
+- `connections_interval_sec` (Optional, Number) - Time window for connection limit (seconds)
+- `requests_max` (Optional, Number) - Maximum requests in interval
+- `requests_interval_sec` (Optional, Number) - Time window for request limit (seconds)
+- `response_errors_max` (Optional, Number) - Maximum response errors in interval
+- `response_errors_interval_sec` (Optional, Number) - Time window for response error limit (seconds)
 
 ---
 
