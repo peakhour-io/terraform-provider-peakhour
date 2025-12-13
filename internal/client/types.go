@@ -355,3 +355,13 @@ type Blocklist struct {
 type BlocklistsSet struct {
 	Blocklists []string `json:"blocklists"`
 }
+
+// WAF types
+type WAFOptions struct {
+	WAFMode                     *string          `json:"waf_mode"`
+	WAFRuleset                  *string          `json:"waf_ruleset"`
+	WAFOwaspVersion             *string          `json:"waf_owasp_version"`
+	WAFExcludedRules            []map[string]any `json:"waf_excluded_rules"`
+	WAFExcludedFiles            []map[string]any `json:"waf_excluded_files"`
+	WAFSetExposedPasswordHeader *bool            `json:"waf_set_exposed_password_header"`
+}

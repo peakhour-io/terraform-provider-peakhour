@@ -854,6 +854,52 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 			}
 			return
 
+		case "/api/v1/domains/example.com/services/rp/waf":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"waf_mode":                        "enabled",
+					"waf_ruleset":                     "owaspv33",
+					"waf_owasp_version":               "v4.0",
+					"waf_excluded_rules":              []any{},
+					"waf_excluded_files":              []any{},
+					"waf_set_exposed_password_header": true,
+				})
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if _, ok := body["waf_mode"]; !ok {
+					t.Errorf("expected waf_mode in request body")
+				}
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/waf/owasp":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"methods": map[string]any{
+						"allowed_methods": []string{"GET", "HEAD", "POST"},
+					},
+					"protocol": map[string]any{
+						"max_num_args": 100,
+					},
+				})
+			case "PATCH":
+				var body map[string]any
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if _, ok := body["methods"]; !ok {
+					t.Errorf("expected methods in request body")
+				}
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
 		default:
 			t.Errorf("Unexpected path: %s", r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
@@ -981,5 +1027,23 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 	}
 	if err := c.SetThreatBlockLists("example.com", BlocklistsSet{Blocklists: []string{"tor"}}); err != nil {
 		t.Fatalf("SetThreatBlockLists failed: %v", err)
+	}
+
+	if _, err := c.GetRPWAFOptions("example.com"); err != nil {
+		t.Fatalf("GetRPWAFOptions failed: %v", err)
+	}
+	if err := c.UpdateRPWAFOptions("example.com", map[string]any{"waf_mode": "warn"}); err != nil {
+		t.Fatalf("UpdateRPWAFOptions failed: %v", err)
+	}
+
+	if _, err := c.GetRPWAFOWASPSettings("example.com"); err != nil {
+		t.Fatalf("GetRPWAFOWASPSettings failed: %v", err)
+	}
+	if err := c.UpdateRPWAFOWASPSettings("example.com", map[string]any{
+		"methods": map[string]any{
+			"allowed_methods": []string{"GET"},
+		},
+	}); err != nil {
+		t.Fatalf("UpdateRPWAFOWASPSettings failed: %v", err)
 	}
 }
