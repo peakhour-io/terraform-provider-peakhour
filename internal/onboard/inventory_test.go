@@ -30,6 +30,8 @@ type fakeInventoryClient struct {
 	firewallSettings  *client.FirewallSettings
 	firewallErrorPage *client.FirewallErrorPage
 	luaOptions        *client.LuaOptions
+	wafOptions        *client.WAFOptions
+	wafOWASPSettings  map[string]any
 	ruleLists         []client.RuleListSummary
 	rulesByPhase      map[string][]client.RulePhaseSummary
 
@@ -115,6 +117,14 @@ func (f *fakeInventoryClient) GetRPLuaOptions(domainName string) (*client.LuaOpt
 	return f.luaOptions, nil
 }
 
+func (f *fakeInventoryClient) GetRPWAFOptions(domainName string) (*client.WAFOptions, error) {
+	return f.wafOptions, nil
+}
+
+func (f *fakeInventoryClient) GetRPWAFOWASPSettings(domainName string) (map[string]any, error) {
+	return f.wafOWASPSettings, nil
+}
+
 func (f *fakeInventoryClient) ListRuleLists(domainName string) ([]client.RuleListSummary, error) {
 	return f.ruleLists, nil
 }
@@ -166,6 +176,8 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		firewallSettings:  &client.FirewallSettings{},
 		firewallErrorPage: &client.FirewallErrorPage{ErrorPage: true},
 		luaOptions:        &client.LuaOptions{},
+		wafOptions:        &client.WAFOptions{},
+		wafOWASPSettings:  map[string]any{},
 		ruleLists: []client.RuleListSummary{
 			{UUID: "list-2", Name: "My List 2", Type: "ips"},
 			{UUID: "list-1", Name: "My List 1", Type: "ips"},
@@ -225,6 +237,8 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-1", ImportID: "example.com/access_list/al-1"},
 		{TypeName: "peakhour_rp_threat_access_list_rule", Name: "al-2", ImportID: "example.com/access_list/al-2"},
 		{TypeName: "peakhour_rp_threat_block_list", Name: "threat_block_list", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: "example.com"},
+		{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: "example.com"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-1", ImportID: "example.com/firewall/rule-1"},
 		{TypeName: "peakhour_rule", Name: "firewall_rule-2", ImportID: "example.com/firewall/rule-2"},
 		{TypeName: "peakhour_rule_list", Name: "list-1", ImportID: "example.com/list-1"},

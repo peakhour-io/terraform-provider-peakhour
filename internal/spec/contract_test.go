@@ -154,6 +154,8 @@ func TestProviderResources_IncludeConfigBacklogResources(t *testing.T) {
 		"peakhour_rp_firewall_settings",
 		"peakhour_rp_firewall_error_page",
 		"peakhour_rp_lua_options",
+		"peakhour_rp_waf_options",
+		"peakhour_rp_waf_owasp_settings",
 	} {
 		if _, ok := names[want]; !ok {
 			t.Fatalf("provider should register %s resource, got %v", want, sortedKeys(names))
@@ -222,6 +224,8 @@ func TestSpecContract_ConfigPathsExist(t *testing.T) {
 		"/api/v1/domains/{domain}/services/rp/threats/access_list",
 		"/api/v1/domains/{domain}/services/rp/threats/access_list/{rule}",
 		"/api/v1/domains/{domain}/services/rp/threats/block_list",
+		"/api/v1/domains/{domain}/services/rp/waf",
+		"/api/v1/domains/{domain}/services/rp/waf/owasp",
 		"/api/v1/domains/{domain}/services/rp/firewall",
 		"/api/v1/domains/{domain}/services/rp/firewall/error_page",
 		"/api/v1/domains/{domain}/services/rp/lua",

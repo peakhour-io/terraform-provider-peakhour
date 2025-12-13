@@ -35,6 +35,8 @@ type InventoryClient interface {
 	GetRPFirewallSettings(domainName string) (*client.FirewallSettings, error)
 	GetRPFirewallErrorPage(domainName string) (*client.FirewallErrorPage, error)
 	GetRPLuaOptions(domainName string) (*client.LuaOptions, error)
+	GetRPWAFOptions(domainName string) (*client.WAFOptions, error)
+	GetRPWAFOWASPSettings(domainName string) (map[string]any, error)
 	ListRuleLists(domainName string) ([]client.RuleListSummary, error)
 	ListRulesInPhase(domainName, phase string) ([]client.RulePhaseSummary, error)
 	ListImageTransformPresets(domainName string) ([]client.ImageTransformPreset, error)
@@ -227,6 +229,22 @@ func CollectDomainInventory(ctx context.Context, c InventoryClient, domain strin
 		}
 	} else {
 		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_lua_options", Name: "lua", ImportID: domain})
+	}
+
+	if _, err := c.GetRPWAFOptions(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: domain})
+	}
+
+	if _, err := c.GetRPWAFOWASPSettings(domain); err != nil {
+		if !client.IsNotFoundError(err) {
+			return nil, err
+		}
+	} else {
+		targets = append(targets, ImportTarget{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: domain})
 	}
 
 	if lists, err := c.ListRuleLists(domain); err != nil {

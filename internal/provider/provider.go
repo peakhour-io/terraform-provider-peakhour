@@ -106,6 +106,8 @@ func (p *PeakhourProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewRPFirewallSettingsResource,
 		NewRPFirewallErrorPageResource,
 		NewRPLuaOptionsResource,
+		NewRPWAFOptionsResource,
+		NewRPWAFOWASPSettingsResource,
 		NewTransformSettingsResource,
 		NewRuleResource,
 		NewBulkRedirectListResource,
