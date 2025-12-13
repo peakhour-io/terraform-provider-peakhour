@@ -154,6 +154,26 @@ func (c *Client) PutWithContext(ctx context.Context, path string, body interface
 	return nil
 }
 
+func (c *Client) PutAndDecode(path string, body interface{}, result interface{}) error {
+	return c.PutAndDecodeWithContext(context.Background(), path, body, result)
+}
+
+func (c *Client) PutAndDecodeWithContext(ctx context.Context, path string, body interface{}, result interface{}) error {
+	resp, err := c.doRequest(ctx, "PUT", path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if result != nil && resp.StatusCode != http.StatusNoContent {
+		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (c *Client) Delete(path string, body interface{}) error {
 	return c.DeleteWithContext(context.Background(), path, body)
 }

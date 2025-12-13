@@ -66,6 +66,33 @@ func TestPost_DecodesResponseOn200OK(t *testing.T) {
 	}
 }
 
+func TestPutAndDecode_DecodesResponseOn201Created(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Fatalf("expected PUT, got %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]string{
+			"uuid": "abc-123",
+		})
+	}))
+	defer server.Close()
+
+	client := NewClient("test-api-key", server.URL)
+
+	var result struct {
+		UUID string `json:"uuid"`
+	}
+	err := client.PutAndDecode("/test", map[string]string{"name": "example.com"}, &result)
+	if err != nil {
+		t.Fatalf("PutAndDecode() returned error: %v", err)
+	}
+	if result.UUID != "abc-123" {
+		t.Errorf("PutAndDecode() result.UUID = %q, want %q", result.UUID, "abc-123")
+	}
+}
+
 // Test 3: APIError should be returned with status code on 4xx/5xx
 func TestClient_ReturnsAPIErrorWithStatusCode(t *testing.T) {
 	tests := []struct {
@@ -699,6 +726,134 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			return
 
+		case "/api/v1/domains/example.com/services/rp/cdn/resources/flush":
+			if r.Method != "POST" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			var body Purge
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if len(body.Paths) == 0 {
+				t.Errorf("expected paths in request body")
+			}
+			if body.Soft == nil {
+				t.Errorf("expected soft in request body")
+			}
+			w.WriteHeader(http.StatusAccepted)
+			return
+
+		case "/api/v1/domains/example.com/services/rp/cdn/wildcard/flush":
+			if r.Method != "POST" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			var body Purge
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if len(body.Paths) == 0 {
+				t.Errorf("expected paths in request body")
+			}
+			w.WriteHeader(http.StatusAccepted)
+			return
+
+		case "/api/v1/domains/example.com/services/rp/cdn/tag/flush":
+			if r.Method != "POST" {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			var body PurgeTags
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if len(body.Tags) == 0 {
+				t.Errorf("expected tags in request body")
+			}
+			w.WriteHeader(http.StatusCreated)
+			return
+
+		case "/api/v1/domains/example.com/services/rp/threats/access_list":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode([]map[string]any{
+					{
+						"rule_type":    "whitelist",
+						"content":      "192.0.2.1",
+						"description":  "allow office",
+						"uuid":         "rule-123",
+						"content_type": "ip",
+						"created":      "2025-01-01T00:00:00Z",
+					},
+				})
+			case "PUT":
+				var body AccessListRuleAdd
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if body.RuleType == "" {
+					t.Errorf("expected rule_type in request body")
+				}
+				if body.Content == "" {
+					t.Errorf("expected content in request body")
+				}
+				if body.Description == "" {
+					t.Errorf("expected description in request body")
+				}
+				w.WriteHeader(http.StatusCreated)
+				json.NewEncoder(w).Encode(map[string]any{
+					"rule_type":    body.RuleType,
+					"content":      body.Content,
+					"description":  body.Description,
+					"uuid":         "rule-123",
+					"content_type": "ip",
+					"created":      "2025-01-01T00:00:00Z",
+				})
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/threats/access_list/rule-123":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode(map[string]any{
+					"rule_type":    "whitelist",
+					"content":      "192.0.2.1",
+					"description":  "allow office",
+					"uuid":         "rule-123",
+					"content_type": "ip",
+					"created":      "2025-01-01T00:00:00Z",
+				})
+			case "PATCH":
+				var body AccessListRuleUpdate
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if body.Description == "" {
+					t.Errorf("expected description in request body")
+				}
+				w.WriteHeader(http.StatusNoContent)
+			case "DELETE":
+				w.WriteHeader(http.StatusNoContent)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
+		case "/api/v1/domains/example.com/services/rp/threats/block_list":
+			switch r.Method {
+			case "GET":
+				json.NewEncoder(w).Encode([]map[string]any{
+					{
+						"name":        "tor",
+						"description": "Tor exit nodes",
+						"enabled":     true,
+					},
+				})
+			case "POST":
+				var body BlocklistsSet
+				_ = json.NewDecoder(r.Body).Decode(&body)
+				if len(body.Blocklists) == 0 {
+					t.Errorf("expected blocklists in request body")
+				}
+				w.WriteHeader(http.StatusAccepted)
+			default:
+				w.WriteHeader(http.StatusMethodNotAllowed)
+			}
+			return
+
 		default:
 			t.Errorf("Unexpected path: %s", r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
@@ -787,5 +942,44 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 
 	if err := c.UpdateRateLimitSettings("example.com", RateLimitSettings{Mode: []string{"zone"}}); err != nil {
 		t.Fatalf("UpdateRateLimitSettings failed: %v", err)
+	}
+
+	soft := true
+	if err := c.FlushRPCDNResources("example.com", Purge{Paths: []string{"/index.html"}, Soft: &soft}); err != nil {
+		t.Fatalf("FlushRPCDNResources failed: %v", err)
+	}
+	if err := c.FlushRPCDNWildcard("example.com", Purge{Paths: []string{"/images/*"}, Soft: nil}); err != nil {
+		t.Fatalf("FlushRPCDNWildcard failed: %v", err)
+	}
+	if err := c.FlushRPCDNTags("example.com", PurgeTags{Tags: []string{"tag-1"}, Soft: nil}); err != nil {
+		t.Fatalf("FlushRPCDNTags failed: %v", err)
+	}
+
+	if _, err := c.ListThreatAccessListRules("example.com"); err != nil {
+		t.Fatalf("ListThreatAccessListRules failed: %v", err)
+	}
+	rule, err := c.CreateThreatAccessListRule("example.com", AccessListRuleAdd{
+		RuleType:    "whitelist",
+		Content:     "192.0.2.1",
+		Description: "allow office",
+	})
+	if err != nil {
+		t.Fatalf("CreateThreatAccessListRule failed: %v", err)
+	}
+	if _, err := c.GetThreatAccessListRule("example.com", rule.UUID); err != nil {
+		t.Fatalf("GetThreatAccessListRule failed: %v", err)
+	}
+	if err := c.UpdateThreatAccessListRule("example.com", rule.UUID, AccessListRuleUpdate{Description: "allow office updated"}); err != nil {
+		t.Fatalf("UpdateThreatAccessListRule failed: %v", err)
+	}
+	if err := c.DeleteThreatAccessListRule("example.com", rule.UUID); err != nil {
+		t.Fatalf("DeleteThreatAccessListRule failed: %v", err)
+	}
+
+	if _, err := c.ListThreatBlockLists("example.com"); err != nil {
+		t.Fatalf("ListThreatBlockLists failed: %v", err)
+	}
+	if err := c.SetThreatBlockLists("example.com", BlocklistsSet{Blocklists: []string{"tor"}}); err != nil {
+		t.Fatalf("SetThreatBlockLists failed: %v", err)
 	}
 }

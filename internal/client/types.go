@@ -314,3 +314,44 @@ type LuaOptions struct {
 	LuaOriginSelector       *string `json:"lua_origin_selector"`
 	LuaOriginPoolSelector   *string `json:"lua_origin_pool_selector"`
 }
+
+// CDN purge types
+type Purge struct {
+	Paths []string `json:"paths"`
+	Soft  *bool    `json:"soft"`
+}
+
+type PurgeTags struct {
+	Tags []string `json:"tags"`
+	Soft *bool    `json:"soft"`
+}
+
+// Threats types
+type AccessListRule struct {
+	RuleType    string `json:"rule_type"`
+	Content     string `json:"content"`
+	Description string `json:"description"`
+	UUID        string `json:"uuid"`
+	ContentType string `json:"content_type"`
+	Created     string `json:"created"`
+}
+
+type AccessListRuleAdd struct {
+	RuleType    string `json:"rule_type"`
+	Content     string `json:"content"`
+	Description string `json:"description"`
+}
+
+type AccessListRuleUpdate struct {
+	Description string `json:"description"`
+}
+
+type Blocklist struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+}
+
+type BlocklistsSet struct {
+	Blocklists []string `json:"blocklists"`
+}
