@@ -266,6 +266,59 @@ See [examples/rules/main.tf](examples/rules/main.tf) and [RULES_GUIDE.md](RULES_
 
 ---
 
+### `peakhour_bulk_redirect_list`
+
+Manages a bulk redirect list. Lists can be referenced from rules in the `bulk_redirect` phase using the `redirect` action.
+
+```hcl
+resource "peakhour_bulk_redirect_list" "legacy" {
+  domain = "example.com"
+  name   = "legacy_redirects"
+}
+```
+
+**Arguments:**
+- `domain` (Required, String) - Domain name
+- `name` (Required, String) - List name (referenced by rules via `from_list`)
+- `description` (Optional, String) - List description
+
+**Attributes:**
+- `uuid` (String) - List UUID (computed)
+- `entries_count` (Number) - Number of entries in the list
+
+---
+
+### `peakhour_bulk_redirect_entry`
+
+Manages an entry in a bulk redirect list.
+
+```hcl
+resource "peakhour_bulk_redirect_entry" "home" {
+  domain             = "example.com"
+  bulk_redirect_uuid = peakhour_bulk_redirect_list.legacy.uuid
+
+  source_path = "/old-home"
+  target_url  = "https://example.com/new-home"
+  status_code = 301
+}
+```
+
+**Arguments:**
+- `domain` (Required, String) - Domain name
+- `bulk_redirect_uuid` (Required, String) - Bulk redirect list UUID
+- `source_path` (Required, String) - Path to match (e.g. `/old-home`)
+- `target_url` (Required, String) - Full URL to redirect to
+- `status_code` (Optional, Number) - HTTP status code (301, 302, 307, 308)
+- `enabled` (Optional, Bool) - Enable/disable entry (default: true)
+- `preserve_query_string` (Optional, Bool) - Preserve query string (default: true)
+- `source_domain` (Optional, String) - Optional domain to match
+- `source_scheme` (Optional, String) - Optional scheme to match
+
+**Attributes:**
+- `entry_id` (String) - Entry identifier (computed)
+
+---
+
 ### `peakhour_rate_limit_zone`
 
 Manages a rate limit zone. Zones define rate limiting rules that can be referenced in rules.
@@ -511,25 +564,20 @@ go build -o terraform-provider-peakhour
 
 ### Testing Locally
 
-1. Build the provider:
+1. Build and install the provider locally:
    ```bash
-   go build -o terraform-provider-peakhour
+   # If you previously ran Terraform in examples/ and changed the provider binary,
+   # clear old lock/state files to avoid checksum mismatch errors:
+   make clean
+   make build
+   make install
    ```
 
-2. Create a local provider configuration (`~/.terraformrc`):
-   ```hcl
-   provider_installation {
-     dev_overrides {
-       "peakhour-io/peakhour" = "/path/to/peakhour-terraform"
-     }
-     direct {}
-   }
-   ```
-
-3. Run Terraform (skip `terraform init` when using provider dev overrides):
+2. Run Terraform:
    ```bash
    cd examples/basic
    export PEAKHOUR_API_KEY="your-api-key"
+   terraform init -backend=false
    terraform validate
    terraform plan
    terraform apply

@@ -209,29 +209,21 @@ Run:
 
 **Prereq:** install Terraform.
 
-**Note:** The provider is not published on the public Terraform Registry. For local validation, use a provider development override (see `README.md` “Testing Locally”) and skip `terraform init` (it will attempt to query the registry and fail).
+**Note:** The provider is not published on the public Terraform Registry. For local validation, install the provider into your local plugin directory (see `README.md` “Testing Locally”) so `terraform init` can find it without contacting the registry.
 
 **Step 1: Validate each example**
 Run:
 ```bash
-# Build the local provider binary (repo root)
-go build -o terraform-provider-peakhour
+# Build + install the local provider binary (repo root)
+make clean
+make build
+make install
 
-# Point Terraform at the local provider directory
-cat > /tmp/terraformrc <<EOF
-provider_installation {
-  dev_overrides {
-    "peakhour-io/peakhour" = "$(pwd)"
-  }
-  direct {}
-}
-EOF
-export TF_CLI_CONFIG_FILE=/tmp/terraformrc
-
-# Validate examples (no init needed with dev overrides)
+# Validate examples
 for dir in examples/*; do
   [ -d "$dir" ] || continue
   echo "Validating $dir..."
+  terraform -chdir="$dir" init -backend=false -input=false >/dev/null
   terraform -chdir="$dir" validate
 done
 ```
@@ -294,5 +286,5 @@ Acceptance tests run when `RUN_ACCEPTANCE=true`, using the `peakhour-api-key` cr
 
 - The original plan file was lost from the repo; this doc is the reconstructed source-of-truth.
 - Drift handling should use `client.IsNotFoundError(err)` (typed 404 via `internal/client/APIError`) rather than string matching.
-- Terraform example validation can be run locally via `terraform validate` + provider dev overrides (see Task 8).
+- Terraform example validation can be run locally via `make install` and `terraform validate` (see Task 8).
 - Do not commit `.toolchains/` — it’s a local convenience only.

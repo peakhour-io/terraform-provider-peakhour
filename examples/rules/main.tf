@@ -19,6 +19,48 @@ resource "peakhour_reverse_proxy_service" "example" {
   domain = peakhour_domain.example.name
 }
 
+# Setup: resources referenced by rules (zones, pools, bulk redirects)
+resource "peakhour_rate_limit_zone" "api_zone" {
+  domain = peakhour_domain.example.name
+  name   = "api_limit"
+
+  requests_max          = 100
+  requests_interval_sec = 60
+  block_duration_sec    = 300
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+resource "peakhour_origin_pool" "api_backend" {
+  domain = peakhour_domain.example.name
+  tag    = "api-backend"
+
+  address = [
+    {
+      address = "192.0.2.10:8080"
+      weight  = 100
+    }
+  ]
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+resource "peakhour_bulk_redirect_list" "legacy" {
+  domain = peakhour_domain.example.name
+  name   = "legacy_redirects"
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+resource "peakhour_bulk_redirect_entry" "legacy_home" {
+  domain             = peakhour_domain.example.name
+  bulk_redirect_uuid = peakhour_bulk_redirect_list.legacy.uuid
+
+  source_path = "/old-home"
+  target_url  = "https://example.com/new-home"
+  status_code = 301
+}
+
 # Example 1: Firewall rule - block specific paths
 resource "peakhour_rule" "block_admin" {
   domain     = peakhour_domain.example.name
@@ -49,14 +91,54 @@ resource "peakhour_rule" "ratelimit_api" {
   actions_json = jsonencode({
     rate_limit_request = [{
       type                            = "rate_limit_request"
-      check_zone                      = "api_limit"
+      check_zone                      = peakhour_rate_limit_zone.api_zone.name
       check_zone_action               = "block"
       check_zone_action_status_code   = 429
       zone_key                        = ["ip"]
     }]
   })
 
-  depends_on = [peakhour_reverse_proxy_service.example]
+  depends_on = [peakhour_rate_limit_zone.api_zone]
+}
+
+# Example 2b: Rate limit (late phase)
+resource "peakhour_rule" "ratelimit_api_late" {
+  domain     = peakhour_domain.example.name
+  phase      = "rate_limit_request_late"
+  name       = "API Rate Limit (Late)"
+  filter_str = "http.request.uri.path matches \"^/api/\""
+  enabled    = true
+
+  actions_json = jsonencode({
+    rate_limit_request_late = [{
+      type                            = "rate_limit_request_late"
+      check_zone                      = peakhour_rate_limit_zone.api_zone.name
+      check_zone_action               = "block"
+      check_zone_action_status_code   = 429
+      zone_key                        = ["ip"]
+    }]
+  })
+
+  depends_on = [peakhour_rate_limit_zone.api_zone]
+}
+
+# Example 2c: Rate limit on responses (track 50x errors)
+resource "peakhour_rule" "ratelimit_errors" {
+  domain     = peakhour_domain.example.name
+  phase      = "rate_limit_response"
+  name       = "Rate Limit 50x Responses"
+  filter_str = "http.response.status_code >= 500"
+  enabled    = true
+
+  actions_json = jsonencode({
+    rate_limit_response = [{
+      type     = "rate_limit_response"
+      add_zone = peakhour_rate_limit_zone.api_zone.name
+      zone_key = ["ip"]
+    }]
+  })
+
+  depends_on = [peakhour_rate_limit_zone.api_zone]
 }
 
 # Example 3: Custom request headers
@@ -75,6 +157,26 @@ resource "peakhour_rule" "add_headers" {
         "X-Environment"   = "Production"
       }
       remove_headers = ["X-Powered-By"]
+    }]
+  })
+
+  depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+# Example 3b: Custom response headers
+resource "peakhour_rule" "add_response_headers" {
+  domain     = peakhour_domain.example.name
+  phase      = "response_headers"
+  name       = "Add Response Headers"
+  filter_str = "http.request.uri.path matches \"^/api/\""
+  enabled    = true
+
+  actions_json = jsonencode({
+    header = [{
+      type = "header"
+      set_headers = {
+        "X-Edge-Provider" = "Peakhour"
+      }
     }]
   })
 
@@ -114,11 +216,11 @@ resource "peakhour_rule" "route_api" {
   actions_json = jsonencode({
     origin_selection = [{
       type     = "origin_selection"
-      set_pool = "api-backend"
+      set_pool = peakhour_origin_pool.api_backend.tag
     }]
   })
 
-  depends_on = [peakhour_reverse_proxy_service.example]
+  depends_on = [peakhour_origin_pool.api_backend]
 }
 
 # Example 6: Request rewrite - modify URL before sending to origin
@@ -137,6 +239,24 @@ resource "peakhour_rule" "rewrite_legacy" {
   })
 
   depends_on = [peakhour_reverse_proxy_service.example]
+}
+
+# Example 6b: Bulk redirects (use a redirect list)
+resource "peakhour_rule" "bulk_redirects" {
+  domain     = peakhour_domain.example.name
+  phase      = "bulk_redirect"
+  name       = "Bulk Redirects"
+  filter_str = "http.request.uri.path matches \"^/old-\""
+  enabled    = true
+
+  actions_json = jsonencode({
+    redirect = [{
+      type      = "redirect"
+      from_list = peakhour_bulk_redirect_list.legacy.name
+    }]
+  })
+
+  depends_on = [peakhour_bulk_redirect_entry.legacy_home]
 }
 
 # Example 7: Challenge bot traffic

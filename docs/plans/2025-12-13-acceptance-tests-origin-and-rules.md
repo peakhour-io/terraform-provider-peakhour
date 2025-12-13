@@ -10,6 +10,29 @@
 
 ---
 
+## Intent & Learnings (Session 2025-12-13)
+
+**Intent:**
+- Make provider behavior and examples **spec-aligned** (using `docs/spec/peakhour-api-v1.json` as source of truth) and prevent regressions with automated checks.
+- Expand “real API” confidence by adding **Terraform acceptance (E2E) tests** for origin pools and rules, covering every supported rules phase.
+
+**Learnings / decisions:**
+- **Spec ↔ code verification:** We added lightweight “contract tests” for the provider-supported subset (paths/schemas/critical shape checks) instead of full OpenAPI codegen. These run in `go test` and are suitable for Jenkins unit stage.
+- **Acceptance harness namespace:** `terraform-plugin-testing` defaults to the `hashicorp/*` namespace; this provider uses `peakhour-io/*`, so acceptance tests must set `TF_ACC_PROVIDER_NAMESPACE=peakhour-io` (handled in `internal/provider/acceptance_test.go`).
+- **Rate limiting (spec-aligned):**
+  - `concurrent_connections` belongs to **global** rate limiting (`RateLimitGlobal`), not zones (`RateLimitZone`).
+  - Zones are referenced by rules; global settings apply separately. This is why this plan includes rule tests that reference zones, and why examples/docs should use `peakhour_rate_limit_global` for global limits.
+- **Raw config endpoint shape:** `/api/v1/domains/{domain}/services/rp/config` returns `RawConfig` (wrapper object with `config`), not `ReverseProxyConfig`. Keep client models aligned even if unused by resources.
+- **Rule phases to cover:** `PhaseName` enum includes `request_rewrite`, `url_config`, `firewall`, `rate_limit_request`, `rate_limit_request_late`, `rate_limit_response`, `request_headers`, `response_headers`, `load_balance`, `bulk_redirect`.
+- **Action payloads:** Spec uses a discriminated union keyed by `type`; some actions require additional required fields (e.g. `redirect` requires `from_list`, `firewall` requires `action`). Acceptance tests should use minimal spec-valid action objects.
+- **Bulk redirects required new resources:** the `bulk_redirect` phase relies on bulk redirect list/entry endpoints, so the provider needs list/entry resources to test the phase end-to-end.
+
+## Current Status (as of 2025-12-13)
+
+- Acceptance tests added for `peakhour_origin_pool`, `peakhour_rule` (all phases), and bulk redirect list/entry resources.
+- Docs/examples updated to cover missing phases and bulk redirects.
+- Next step is to run `make testacc` in Jenkins with real credentials (`RUN_ACCEPTANCE=true`) and iterate on any API-environment specific failures.
+
 ## Prereqs (one-time)
 
 - Ensure Terraform CLI is available in `PATH`.
@@ -216,4 +239,3 @@ Add examples for:
 ## Jenkins note
 
 No Jenkins changes required: `Jenkinsfile` already runs `make testacc` when `RUN_ACCEPTANCE=true`.
-
