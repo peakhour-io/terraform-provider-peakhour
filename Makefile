@@ -12,25 +12,29 @@ BINARY_NAME = terraform-provider-peakhour
 build:
 	go build -o $(BINARY_NAME)
 
-# Individual platform builds
+# Build flags for smaller binaries (-s strips symbol table, -w strips DWARF)
+LDFLAGS = -s -w
+GOBUILD = GOTOOLCHAIN=local CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)"
+
+# Individual platform builds (stripped)
 build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(BINARY_NAME)_linux_amd64
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)_linux_amd64
 
 build-linux-arm64:
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o $(BINARY_NAME)_linux_arm64
+	GOOS=linux GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)_linux_arm64
 
 build-darwin:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(BINARY_NAME)_darwin_amd64
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)_darwin_amd64
 
 build-darwin-arm64:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o $(BINARY_NAME)_darwin_arm64
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) -o $(BINARY_NAME)_darwin_arm64
 
 build-windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o $(BINARY_NAME)_windows_amd64.exe
+	GOOS=windows GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)_windows_amd64.exe
 
 build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows
 	@echo "Built binaries for all platforms:"
-	@ls -la $(BINARY_NAME)_*
+	@ls -lh $(BINARY_NAME)_*
 
 install: build
 	@set -euo pipefail; \
@@ -123,6 +127,6 @@ beta-bundle: build-all
 	  shasum -a 256 $(BINARY_NAME)_* > SHA256SUMS; \
 	fi; \
 	cd ..; \
-	zip -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
+	zip -9 -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
 	rm -rf "$$BUNDLE_DIR"; \
-	echo "Created $$BUNDLE_DIR.zip"
+	ls -lh "$$BUNDLE_DIR.zip"
