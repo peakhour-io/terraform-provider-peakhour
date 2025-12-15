@@ -96,6 +96,7 @@ func (p *PeakhourProvider) Configure(ctx context.Context, req provider.Configure
 func (p *PeakhourProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewDomainResource,
+		NewDomainPlanResource,
 		NewReverseProxyServiceResource,
 		NewReverseProxyConfigResource,
 		NewRPSettingsResource,
@@ -129,6 +130,7 @@ func (p *PeakhourProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewRateLimitZoneResource,
 		NewRuleListResource,
 		NewImageTransformResource,
+		NewImageTransformCommitResource,
 	}
 }
 

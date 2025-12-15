@@ -40,9 +40,9 @@ type RPWAFCustomRuleResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 
-	RulesJSON   types.String `tfsdk:"rules_json"`
-	ActionJSON  types.String `tfsdk:"action_json"`
-	LoggingJSON types.String `tfsdk:"logging_json"`
+	RulesJSON   JSONNormalizedValue `tfsdk:"rules_json"`
+	ActionJSON  JSONNormalizedValue `tfsdk:"action_json"`
+	LoggingJSON JSONNormalizedValue `tfsdk:"logging_json"`
 }
 
 func (r *RPWAFCustomRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -111,16 +111,19 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"rules_json": schema.StringAttribute{
-				Description: "Rules as JSON array (WafCustomRuleExpression[]).",
+				Description: "Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults are ignored for drift detection.",
 				Required:    true,
+				CustomType:  JSONNormalizedType{},
 			},
 			"action_json": schema.StringAttribute{
-				Description: "Action as JSON object (WafAction).",
+				Description: "Action as JSON object (WafAction). Server-side defaults are ignored for drift detection.",
 				Required:    true,
+				CustomType:  JSONNormalizedType{},
 			},
 			"logging_json": schema.StringAttribute{
-				Description: "Logging as JSON object (WafLogging).",
+				Description: "Logging as JSON object (WafLogging). Server-side defaults are ignored for drift detection.",
 				Required:    true,
+				CustomType:  JSONNormalizedType{},
 			},
 		},
 	}
@@ -165,11 +168,7 @@ func (r *RPWAFCustomRuleResource) Create(ctx context.Context, req resource.Creat
 	plan.Created = types.StringValue(created.Created)
 	plan.ID = types.StringValue(fmt.Sprintf("%s/customrule/%s", plan.Domain.ValueString(), created.UUID))
 
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading WAF custom rule after create", err.Error())
-		return
-	}
-
+	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -195,7 +194,9 @@ func (r *RPWAFCustomRuleResource) Read(ctx context.Context, req resource.ReadReq
 
 func (r *RPWAFCustomRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan RPWAFCustomRuleResourceModel
+	var state RPWAFCustomRuleResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -210,11 +211,9 @@ func (r *RPWAFCustomRuleResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading WAF custom rule after update", err.Error())
-		return
-	}
-
+	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
+	// Preserve computed fields from state that don't change during update.
+	plan.RuleID = state.RuleID
 	plan.ID = types.StringValue(fmt.Sprintf("%s/customrule/%s", plan.Domain.ValueString(), plan.UUID.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -290,41 +289,27 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 	model.RuleID = types.Int64Value(int64(found.RuleID))
 	model.Created = types.StringValue(found.Created)
 
+	// Always set JSON fields from API - semantic equality handles drift detection
 	rulesRaw, err := json.Marshal(found.Rules)
 	if err != nil {
 		diags.AddError("Error marshalling rules", err.Error())
 		return nil
 	}
-	rulesJSON, err := normalizeJSON(string(rulesRaw))
-	if err != nil {
-		diags.AddError("Error normalizing rules_json", err.Error())
-		return nil
-	}
-	model.RulesJSON = types.StringValue(rulesJSON)
+	model.RulesJSON = NewJSONNormalizedValue(string(rulesRaw))
 
 	actionRaw, err := json.Marshal(found.Action)
 	if err != nil {
 		diags.AddError("Error marshalling action", err.Error())
 		return nil
 	}
-	actionJSON, err := normalizeJSON(string(actionRaw))
-	if err != nil {
-		diags.AddError("Error normalizing action_json", err.Error())
-		return nil
-	}
-	model.ActionJSON = types.StringValue(actionJSON)
+	model.ActionJSON = NewJSONNormalizedValue(string(actionRaw))
 
 	loggingRaw, err := json.Marshal(found.Logging)
 	if err != nil {
 		diags.AddError("Error marshalling logging", err.Error())
 		return nil
 	}
-	loggingJSON, err := normalizeJSON(string(loggingRaw))
-	if err != nil {
-		diags.AddError("Error normalizing logging_json", err.Error())
-		return nil
-	}
-	model.LoggingJSON = types.StringValue(loggingJSON)
+	model.LoggingJSON = NewJSONNormalizedValue(string(loggingRaw))
 
 	return nil
 }
@@ -367,7 +352,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["rules"] = rules
-	model.RulesJSON = types.StringValue(rulesJSON)
+	model.RulesJSON = NewJSONNormalizedValue(rulesJSON)
 
 	actionJSON, err := normalizeJSON(model.ActionJSON.ValueString())
 	if err != nil {
@@ -380,7 +365,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["action"] = action
-	model.ActionJSON = types.StringValue(actionJSON)
+	model.ActionJSON = NewJSONNormalizedValue(actionJSON)
 
 	loggingJSON, err := normalizeJSON(model.LoggingJSON.ValueString())
 	if err != nil {
@@ -393,7 +378,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["logging"] = logging
-	model.LoggingJSON = types.StringValue(loggingJSON)
+	model.LoggingJSON = NewJSONNormalizedValue(loggingJSON)
 
 	return body
 }

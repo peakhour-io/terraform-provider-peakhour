@@ -151,6 +151,17 @@ func (r *RateLimitGlobalResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	// Read back from API to populate computed fields
+	rl, err := r.client.GetRateLimit(plan.Domain.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading global rate limit settings after create",
+			"Could not read global rate limit for domain "+plan.Domain.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	updateRateLimitGlobalModelFromAPI(&plan, &rl.Global)
+
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/rate_limit_global")
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -202,6 +213,17 @@ func (r *RateLimitGlobalResource) Update(ctx context.Context, req resource.Updat
 		)
 		return
 	}
+
+	// Read back from API to populate computed fields
+	rl, err := r.client.GetRateLimit(plan.Domain.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading global rate limit settings after update",
+			"Could not read global rate limit for domain "+plan.Domain.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	updateRateLimitGlobalModelFromAPI(&plan, &rl.Global)
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)

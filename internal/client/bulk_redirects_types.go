@@ -32,6 +32,35 @@ func (c RedirectStatusCode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int(c))
 }
 
+// StringOrInt handles API fields that can be returned as either string or int
+type StringOrInt string
+
+func (s *StringOrInt) UnmarshalJSON(b []byte) error {
+	// Try number first
+	var n int
+	if err := json.Unmarshal(b, &n); err == nil {
+		*s = StringOrInt(strconv.Itoa(n))
+		return nil
+	}
+
+	// Try string
+	var str string
+	if err := json.Unmarshal(b, &str); err == nil {
+		*s = StringOrInt(str)
+		return nil
+	}
+
+	return fmt.Errorf("invalid value (expected string or int): %s", string(b))
+}
+
+func (s StringOrInt) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(s))
+}
+
+func (s StringOrInt) String() string {
+	return string(s)
+}
+
 type BulkRedirectListSummary struct {
 	UUID         string  `json:"uuid"`
 	Name         string  `json:"name"`
@@ -57,7 +86,7 @@ type BulkRedirectListUpdate struct {
 }
 
 type BulkRedirectEntry struct {
-	ID                  string              `json:"id"`
+	ID                  StringOrInt         `json:"id"`
 	Enabled             *bool               `json:"enabled,omitempty"`
 	PreserveQueryString *bool               `json:"preserve_query_string,omitempty"`
 	SourceDomain        *string             `json:"source_domain,omitempty"`

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,9 +36,9 @@ type RPWAFOptionsResourceModel struct {
 	WAFRuleset                  types.String `tfsdk:"waf_ruleset"`
 	WAFSetExposedPasswordHeader types.Bool   `tfsdk:"waf_set_exposed_password_header"`
 
-	WAFOwaspVersion   types.String `tfsdk:"waf_owasp_version"`
-	ExcludedRulesJSON types.String `tfsdk:"excluded_rules_json"`
-	ExcludedFilesJSON types.String `tfsdk:"excluded_files_json"`
+	WAFOwaspVersion   types.String         `tfsdk:"waf_owasp_version"`
+	ExcludedRulesJSON jsontypes.Normalized `tfsdk:"excluded_rules_json"`
+	ExcludedFilesJSON jsontypes.Normalized `tfsdk:"excluded_files_json"`
 }
 
 func (r *RPWAFOptionsResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -96,6 +97,7 @@ func (r *RPWAFOptionsResource) Schema(ctx context.Context, req resource.SchemaRe
 			"excluded_rules_json": schema.StringAttribute{
 				Description: "Computed JSON array of excluded rules (disabled rules).",
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -103,6 +105,7 @@ func (r *RPWAFOptionsResource) Schema(ctx context.Context, req resource.SchemaRe
 			"excluded_files_json": schema.StringAttribute{
 				Description: "Computed JSON array of excluded rule groups (disabled files).",
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -276,29 +279,20 @@ func (r *RPWAFOptionsResource) read(ctx context.Context, model *RPWAFOptionsReso
 		model.WAFOwaspVersion = types.StringValue(*options.WAFOwaspVersion)
 	}
 
+	// Always set JSON fields from API - semantic equality handles drift detection
 	excludedRulesRaw, err := json.Marshal(options.WAFExcludedRules)
 	if err != nil {
 		diags.AddError("Error marshalling excluded rules", err.Error())
 		return nil
 	}
-	excludedRules, err := normalizeJSON(string(excludedRulesRaw))
-	if err != nil {
-		diags.AddError("Error normalizing excluded rules JSON", err.Error())
-		return nil
-	}
-	model.ExcludedRulesJSON = types.StringValue(excludedRules)
+	model.ExcludedRulesJSON = jsontypes.NewNormalizedValue(string(excludedRulesRaw))
 
 	excludedFilesRaw, err := json.Marshal(options.WAFExcludedFiles)
 	if err != nil {
 		diags.AddError("Error marshalling excluded files", err.Error())
 		return nil
 	}
-	excludedFiles, err := normalizeJSON(string(excludedFilesRaw))
-	if err != nil {
-		diags.AddError("Error normalizing excluded files JSON", err.Error())
-		return nil
-	}
-	model.ExcludedFilesJSON = types.StringValue(excludedFiles)
+	model.ExcludedFilesJSON = jsontypes.NewNormalizedValue(string(excludedFilesRaw))
 
 	return nil
 }

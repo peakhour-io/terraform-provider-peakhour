@@ -152,8 +152,8 @@ func (r *BulkRedirectEntryResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	plan.EntryID = types.StringValue(entry.ID)
-	plan.ID = types.StringValue(fmt.Sprintf("%s/bulk_redirects/%s/entries/%s", plan.Domain.ValueString(), plan.BulkRedirectUUID.ValueString(), entry.ID))
+	plan.EntryID = types.StringValue(entry.ID.String())
+	plan.ID = types.StringValue(fmt.Sprintf("%s/bulk_redirects/%s/entries/%s", plan.Domain.ValueString(), plan.BulkRedirectUUID.ValueString(), entry.ID.String()))
 
 	r.updateModelFromEntry(&plan, entry)
 
@@ -184,7 +184,7 @@ func (r *BulkRedirectEntryResource) Read(ctx context.Context, req resource.ReadR
 
 	var found *client.BulkRedirectEntry
 	for i := range entries {
-		if entries[i].ID == state.EntryID.ValueString() {
+		if entries[i].ID.String() == state.EntryID.ValueString() {
 			found = &entries[i]
 			break
 		}
@@ -194,7 +194,7 @@ func (r *BulkRedirectEntryResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	state.ID = types.StringValue(fmt.Sprintf("%s/bulk_redirects/%s/entries/%s", state.Domain.ValueString(), state.BulkRedirectUUID.ValueString(), found.ID))
+	state.ID = types.StringValue(fmt.Sprintf("%s/bulk_redirects/%s/entries/%s", state.Domain.ValueString(), state.BulkRedirectUUID.ValueString(), found.ID.String()))
 	r.updateModelFromEntry(&state, found)
 
 	diags = resp.State.Set(ctx, &state)
@@ -325,7 +325,7 @@ func (r *BulkRedirectEntryResource) buildEntryUpdateFromModel(model *BulkRedirec
 }
 
 func (r *BulkRedirectEntryResource) updateModelFromEntry(model *BulkRedirectEntryResourceModel, entry *client.BulkRedirectEntry) {
-	model.EntryID = types.StringValue(entry.ID)
+	model.EntryID = types.StringValue(entry.ID.String())
 
 	if entry.Enabled != nil {
 		model.Enabled = types.BoolValue(*entry.Enabled)

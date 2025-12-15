@@ -27,11 +27,11 @@ type ImageTransformResource struct {
 }
 
 type ImageTransformResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	Domain     types.String `tfsdk:"domain"`
-	UUID       types.String `tfsdk:"uuid"`
-	Name       types.String `tfsdk:"name"`
-	ConfigJSON types.String `tfsdk:"config_json"`
+	ID         types.String         `tfsdk:"id"`
+	Domain     types.String         `tfsdk:"domain"`
+	UUID       types.String         `tfsdk:"uuid"`
+	Name       types.String         `tfsdk:"name"`
+	ConfigJSON JSONNormalizedValue `tfsdk:"config_json"`
 }
 
 func (r *ImageTransformResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -71,8 +71,9 @@ func (r *ImageTransformResource) Schema(ctx context.Context, req resource.Schema
 				},
 			},
 			"config_json": schema.StringAttribute{
-				Description: "Transformation configuration as JSON string (e.g. '{\"width\": 800}').",
+				Description: "Transformation configuration as JSON string (e.g. '{\"width\": 800}'). Server-side defaults are ignored for drift detection.",
 				Required:    true,
+				CustomType:  JSONNormalizedType{},
 			},
 		},
 	}
@@ -121,24 +122,37 @@ func (r *ImageTransformResource) Create(ctx context.Context, req resource.Create
 
 	result, err := r.client.CreateImageTransformPreset(plan.Domain.ValueString(), preset)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating image transform preset",
-			"Could not create preset for domain "+plan.Domain.ValueString()+": "+err.Error(),
-		)
+		if client.IsConflictError(err) || isAlreadyExistsError(err) {
+			// Try to find the existing preset to get its UUID
+			existingUUID := "<uuid>"
+			if presets, listErr := r.client.ListImageTransformPresets(plan.Domain.ValueString()); listErr == nil {
+				for _, p := range presets {
+					if p.Name == plan.Name.ValueString() {
+						existingUUID = p.UUID
+						break
+					}
+				}
+			}
+			resp.Diagnostics.AddError(
+				"Image Transform Preset Already Exists",
+				fmt.Sprintf("An image transform preset with name %q already exists for domain %q. To manage it with Terraform, add an import block:\n\n"+
+					"  import {\n"+
+					"    to = peakhour_image_transform.example\n"+
+					"    id = \"%s/%s\"\n"+
+					"  }\n\n"+
+					"Then run: terraform apply",
+					plan.Name.ValueString(), plan.Domain.ValueString(), plan.Domain.ValueString(), existingUUID),
+			)
+		} else {
+			resp.Diagnostics.AddError(
+				"Error creating image transform preset",
+				"Could not create preset for domain "+plan.Domain.ValueString()+": "+err.Error(),
+			)
+		}
 		return
 	}
 
-	// Commit changes
-	if err := r.client.CommitImageTransforms(plan.Domain.ValueString()); err != nil {
-		// Log warning but don't fail properly as the resource was created?
-		// Actually, if commit fails, the change might not be effective.
-		// For terraform strictness, maybe we should warn or error.
-		// Erroring is safer.
-		resp.Diagnostics.AddWarning(
-			"Error committing image transforms",
-			"Preset created but commit failed: "+err.Error(),
-		)
-	}
+	// Note: Use peakhour_image_transform_commit resource to commit changes
 
 	// Set computed values
 	plan.UUID = types.StringValue(result.UUID)
@@ -170,11 +184,11 @@ func (r *ImageTransformResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	// Update state
+	// Update state from API response
 	state.Name = types.StringValue(preset.Name)
 	state.ID = types.StringValue(state.Domain.ValueString() + "/" + state.UUID.ValueString())
 
-	// Convert config to JSON
+	// Always set config_json from API - semantic equality handles drift detection
 	configJSON, err := json.Marshal(preset.Config)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -183,7 +197,7 @@ func (r *ImageTransformResource) Read(ctx context.Context, req resource.ReadRequ
 		)
 		return
 	}
-	state.ConfigJSON = types.StringValue(string(configJSON))
+	state.ConfigJSON = NewJSONNormalizedValue(string(configJSON))
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -235,7 +249,7 @@ func (r *ImageTransformResource) Update(ctx context.Context, req resource.Update
 
 	// Let's assume Name is immutable for now based on struct.
 
-	_, err := r.client.UpdateImageTransformPreset(plan.Domain.ValueString(), plan.UUID.ValueString(), update)
+	err := r.client.UpdateImageTransformPreset(plan.Domain.ValueString(), plan.UUID.ValueString(), update)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating image transform preset",
@@ -244,13 +258,7 @@ func (r *ImageTransformResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// Commit changes
-	if err := r.client.CommitImageTransforms(plan.Domain.ValueString()); err != nil {
-		resp.Diagnostics.AddWarning(
-			"Error committing image transforms",
-			"Preset updated but commit failed: "+err.Error(),
-		)
-	}
+	// Note: Use peakhour_image_transform_commit resource to commit changes
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -274,13 +282,7 @@ func (r *ImageTransformResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	// Commit changes
-	if err := r.client.CommitImageTransforms(state.Domain.ValueString()); err != nil {
-		resp.Diagnostics.AddWarning(
-			"Error committing image transforms",
-			"Preset deleted but commit failed: "+err.Error(),
-		)
-	}
+	// Note: Use peakhour_image_transform_commit resource to commit changes
 }
 
 func (r *ImageTransformResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

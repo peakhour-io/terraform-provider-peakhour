@@ -147,10 +147,23 @@ func (r *OriginPoolResource) Create(ctx context.Context, req resource.CreateRequ
 	// Create pool via API
 	err := r.client.CreateOriginPool(plan.Domain.ValueString(), pool)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating origin pool",
-			"Could not create pool for domain "+plan.Domain.ValueString()+": "+err.Error(),
-		)
+		if client.IsConflictError(err) {
+			resp.Diagnostics.AddError(
+				"Origin Pool Already Exists",
+				fmt.Sprintf("An origin pool with tag %q already exists for domain %q. To manage it with Terraform, add an import block:\n\n"+
+					"  import {\n"+
+					"    to = peakhour_origin_pool.%s\n"+
+					"    id = \"%s/origins/%s\"\n"+
+					"  }\n\n"+
+					"Then run: terraform apply",
+					plan.Tag.ValueString(), plan.Domain.ValueString(), "example", plan.Domain.ValueString(), plan.Tag.ValueString()),
+			)
+		} else {
+			resp.Diagnostics.AddError(
+				"Error creating origin pool",
+				"Could not create pool for domain "+plan.Domain.ValueString()+": "+err.Error(),
+			)
+		}
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -28,14 +29,14 @@ type RuleResource struct {
 }
 
 type RuleResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Domain      types.String `tfsdk:"domain"`
-	UUID        types.String `tfsdk:"uuid"`
-	Phase       types.String `tfsdk:"phase"`
-	Name        types.String `tfsdk:"name"`
-	FilterStr   types.String `tfsdk:"filter_str"`
-	Enabled     types.Bool   `tfsdk:"enabled"`
-	ActionsJSON types.String `tfsdk:"actions_json"`
+	ID          types.String         `tfsdk:"id"`
+	Domain      types.String         `tfsdk:"domain"`
+	UUID        types.String         `tfsdk:"uuid"`
+	Phase       types.String         `tfsdk:"phase"`
+	Name        types.String         `tfsdk:"name"`
+	FilterStr   types.String         `tfsdk:"filter_str"`
+	Enabled     types.Bool           `tfsdk:"enabled"`
+	ActionsJSON jsontypes.Normalized `tfsdk:"actions_json"`
 }
 
 func (r *RuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -91,6 +92,7 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"actions_json": schema.StringAttribute{
 				Description: "Actions as JSON string. Structure: map[action_type][]action. Example: '{\"firewall\":[{\"type\":\"firewall\",\"action\":\"deny\"}]}'",
 				Required:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 		},
 	}
@@ -131,13 +133,13 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	// Normalize JSON to prevent spurious drift
+	// Normalize JSON for consistent storage
 	normalizedJSON, err := normalizeJSON(plan.ActionsJSON.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
 		return
 	}
-	plan.ActionsJSON = types.StringValue(normalizedJSON)
+	plan.ActionsJSON = jsontypes.NewNormalizedValue(normalizedJSON)
 
 	// Create rule
 	ruleAdd := client.RulePhaseAdd{
@@ -204,7 +206,7 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		state.Enabled = types.BoolNull()
 	}
 
-	// Convert actions to JSON
+	// Always set actions_json from API - semantic equality handles drift detection
 	actionsJSON, err := json.Marshal(rule.Actions)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -213,7 +215,7 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 		return
 	}
-	state.ActionsJSON = types.StringValue(string(actionsJSON))
+	state.ActionsJSON = jsontypes.NewNormalizedValue(string(actionsJSON))
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -237,13 +239,13 @@ func (r *RuleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	// Normalize JSON to prevent spurious drift
+	// Normalize JSON for consistent storage
 	normalizedJSON, err := normalizeJSON(plan.ActionsJSON.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
 		return
 	}
-	plan.ActionsJSON = types.StringValue(normalizedJSON)
+	plan.ActionsJSON = jsontypes.NewNormalizedValue(normalizedJSON)
 
 	// Build update
 	name := plan.Name.ValueString()

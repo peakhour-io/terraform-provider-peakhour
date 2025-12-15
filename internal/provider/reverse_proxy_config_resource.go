@@ -161,6 +161,17 @@ func (r *ReverseProxyConfigResource) Create(ctx context.Context, req resource.Cr
 	// Set ID
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/config")
 
+	// Read back from API to populate computed fields
+	apiConfig, err := r.client.GetReverseProxyConfig(plan.Domain.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading reverse proxy configuration after create",
+			"Could not read config for domain "+plan.Domain.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	r.mapConfigToModel(ctx, apiConfig, &plan)
+
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 }
@@ -219,6 +230,17 @@ func (r *ReverseProxyConfigResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
+	// Read back from API to populate computed fields
+	apiConfig, err := r.client.GetReverseProxyConfig(plan.Domain.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading reverse proxy configuration after update",
+			"Could not read config for domain "+plan.Domain.ValueString()+": "+err.Error(),
+		)
+		return
+	}
+	r.mapConfigToModel(ctx, apiConfig, &plan)
+
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 }
@@ -244,22 +266,23 @@ func (r *ReverseProxyConfigResource) ImportState(ctx context.Context, req resour
 
 func (r *ReverseProxyConfigResource) deleteConfig(ctx context.Context, domain string) error {
 	// Send config with explicit zero values to reset all fields
+	// Note: redirect_mode must be "none" (empty string fails validation)
+	// redirect_location and redirect_status_code are omitted when mode is "none"
 	f := false
-	s := ""
-	i := 0
+	none := "none"
 	emptySlice := []string{}
 
 	config := client.ReverseProxyConfig{
-		Websocket:          &f,
-		Gzip:               &f,
-		Brotli:             &f,
-		Aliases:            &emptySlice,
-		TrackSessions:      &f,
-		Debug:              &f,
-		Segment:            &f,
-		RedirectMode:       &s,
-		RedirectLocation:   &s,
-		RedirectStatusCode: &i,
+		Websocket:     &f,
+		Gzip:          &f,
+		Brotli:        &f,
+		Aliases:       &emptySlice,
+		TrackSessions: &f,
+		Debug:         &f,
+		Segment:       &f,
+		RedirectMode:  &none,
+		// RedirectLocation omitted - not valid when mode is "none"
+		// RedirectStatusCode omitted - 0 is not a valid enum value
 	}
 
 	err := r.client.UpdateReverseProxyConfig(domain, config)
@@ -297,7 +320,8 @@ func (r *ReverseProxyConfigResource) mapConfigToModel(ctx context.Context, confi
 	} else {
 		state.Segment = types.BoolNull()
 	}
-	if config.RedirectMode != nil {
+	if config.RedirectMode != nil && *config.RedirectMode != "none" {
+		// "none" is the default/disabled state, treat as null
 		state.RedirectMode = types.StringValue(*config.RedirectMode)
 	} else {
 		state.RedirectMode = types.StringNull()
@@ -359,7 +383,7 @@ func (r *ReverseProxyConfigResource) buildConfigFromModel(ctx context.Context, m
 		v := model.RedirectLocation.ValueString()
 		config.RedirectLocation = &v
 	}
-	if !model.RedirectStatusCode.IsNull() {
+	if !model.RedirectStatusCode.IsNull() && !model.RedirectStatusCode.IsUnknown() {
 		v := int(model.RedirectStatusCode.ValueInt64())
 		config.RedirectStatusCode = &v
 	}

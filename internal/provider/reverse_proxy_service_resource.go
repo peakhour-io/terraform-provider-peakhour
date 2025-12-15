@@ -86,10 +86,23 @@ func (r *ReverseProxyServiceResource) Create(ctx context.Context, req resource.C
 	// Create service via API
 	err := r.client.CreateDomainService(plan.Domain.ValueString(), "rp")
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating reverse proxy service",
-			"Could not create service for domain "+plan.Domain.ValueString()+": "+err.Error(),
-		)
+		if client.IsConflictError(err) {
+			resp.Diagnostics.AddError(
+				"Reverse Proxy Service Already Exists",
+				fmt.Sprintf("The reverse proxy service already exists for domain %q. To manage it with Terraform, add an import block:\n\n"+
+					"  import {\n"+
+					"    to = peakhour_reverse_proxy_service.%s\n"+
+					"    id = %q\n"+
+					"  }\n\n"+
+					"Then run: terraform apply",
+					plan.Domain.ValueString(), "example", plan.Domain.ValueString()),
+			)
+		} else {
+			resp.Diagnostics.AddError(
+				"Error creating reverse proxy service",
+				"Could not create service for domain "+plan.Domain.ValueString()+": "+err.Error(),
+			)
+		}
 		return
 	}
 

@@ -28,9 +28,9 @@ type RPWAFOWASPSettingsResource struct {
 }
 
 type RPWAFOWASPSettingsResourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	Domain       types.String `tfsdk:"domain"`
-	SettingsJSON types.String `tfsdk:"settings_json"`
+	ID           types.String        `tfsdk:"id"`
+	Domain       types.String        `tfsdk:"domain"`
+	SettingsJSON JSONNormalizedValue `tfsdk:"settings_json"`
 }
 
 func (r *RPWAFOWASPSettingsResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -56,9 +56,10 @@ func (r *RPWAFOWASPSettingsResource) Schema(ctx context.Context, req resource.Sc
 				},
 			},
 			"settings_json": schema.StringAttribute{
-				Description: "OWASP settings as a JSON object. This is PATCHed to the API; omitted keys are left unchanged, and explicit nulls clear values.",
+				Description: "OWASP settings as a JSON object. This is PATCHed to the API; omitted keys are left unchanged, and explicit nulls clear values. Server-side defaults are ignored for drift detection.",
 				Optional:    true,
 				Computed:    true,
+				CustomType:  JSONNormalizedType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -96,11 +97,7 @@ func (r *RPWAFOWASPSettingsResource) Create(ctx context.Context, req resource.Cr
 	}
 
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/rp_waf_owasp_settings")
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading WAF OWASP settings after create", err.Error())
-		return
-	}
-
+	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -137,11 +134,7 @@ func (r *RPWAFOWASPSettingsResource) Update(ctx context.Context, req resource.Up
 	}
 
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/rp_waf_owasp_settings")
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading WAF OWASP settings after update", err.Error())
-		return
-	}
-
+	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -197,18 +190,12 @@ func (r *RPWAFOWASPSettingsResource) read(ctx context.Context, model *RPWAFOWASP
 		return err
 	}
 
+	// Always set settings_json from API - semantic equality handles drift detection
 	raw, err := json.Marshal(settings)
 	if err != nil {
 		diags.AddError("Error marshalling OWASP settings", err.Error())
 		return nil
 	}
-
-	normalized, err := normalizeJSON(string(raw))
-	if err != nil {
-		diags.AddError("Error normalizing OWASP settings JSON", err.Error())
-		return nil
-	}
-
-	model.SettingsJSON = types.StringValue(normalized)
+	model.SettingsJSON = NewJSONNormalizedValue(string(raw))
 	return nil
 }

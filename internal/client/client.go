@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const defaultAPIURL = "https://console.peakhour.io"
+const defaultAPIURL = "https://www.peakhour.io"
 
 type Client struct {
 	APIKey     string
@@ -110,6 +110,17 @@ func (e *APIError) IsNotFound() bool {
 func IsNotFoundError(err error) bool {
 	if apiErr, ok := err.(*APIError); ok {
 		return apiErr.IsNotFound()
+	}
+	return false
+}
+
+func (e *APIError) IsConflict() bool {
+	return e.StatusCode == http.StatusConflict
+}
+
+func IsConflictError(err error) bool {
+	if apiErr, ok := err.(*APIError); ok {
+		return apiErr.IsConflict()
 	}
 	return false
 }

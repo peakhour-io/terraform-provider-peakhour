@@ -86,10 +86,23 @@ func (r *DomainResource) Create(ctx context.Context, req resource.CreateRequest,
 	// Create domain via API
 	domain, err := r.client.CreateDomain(plan.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating domain",
-			"Could not create domain, unexpected error: "+err.Error(),
-		)
+		if client.IsConflictError(err) {
+			resp.Diagnostics.AddError(
+				"Domain Already Exists",
+				fmt.Sprintf("A domain with name %q already exists. To manage it with Terraform, add an import block to your configuration:\n\n"+
+					"  import {\n"+
+					"    to = peakhour_domain.%s\n"+
+					"    id = %q\n"+
+					"  }\n\n"+
+					"Then run: terraform apply",
+					plan.Name.ValueString(), "example", plan.Name.ValueString()),
+			)
+		} else {
+			resp.Diagnostics.AddError(
+				"Error creating domain",
+				"Could not create domain: "+err.Error(),
+			)
+		}
 		return
 	}
 

@@ -410,14 +410,11 @@ func TestClient_TransformConfigEndpoints(t *testing.T) {
 	}
 
 	// Test UpdateImageTransformPreset
-	updatedPreset, err := client.UpdateImageTransformPreset("example.com", "preset-1", ImageTransformPresetUpdate{
+	err = client.UpdateImageTransformPreset("example.com", "preset-1", ImageTransformPresetUpdate{
 		Config: map[string]interface{}{"width": 200},
 	})
 	if err != nil {
 		t.Fatalf("UpdateImageTransformPreset failed: %v", err)
-	}
-	if updatedPreset.Name != "Optimise" {
-		t.Error("Expected name Optimise")
 	}
 
 	// Test DeleteImageTransformPreset

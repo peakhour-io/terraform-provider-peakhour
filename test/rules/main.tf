@@ -37,7 +37,7 @@ resource "peakhour_origin_pool" "api_backend" {
 
   address = [
     {
-      address = "http://192.0.2.10:8080"  # Use URL format: http://host:port or https://host:port
+      address = "192.0.2.10:8080"
       weight  = 100
     }
   ]

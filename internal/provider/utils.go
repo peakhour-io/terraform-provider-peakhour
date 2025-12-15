@@ -19,6 +19,16 @@ func parseCompositeID(id string, parts int) ([]string, error) {
 	return segments, nil
 }
 
+// isAlreadyExistsError checks if an API error indicates a resource already exists.
+// This handles 400 errors with validation messages like "already exists".
+func isAlreadyExistsError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "already exists")
+}
+
 func normalizeJSON(input string) (string, error) {
 	var v interface{}
 	if err := json.Unmarshal([]byte(input), &v); err != nil {

@@ -1,17 +1,3 @@
-terraform {
-  required_providers {
-    peakhour = {
-      source = "peakhour-io/peakhour"
-    }
-  }
-}
-
-provider "peakhour" {
-  # API key can be set via PEAKHOUR_API_KEY environment variable
-  # or explicitly here:
-  # api_key = "your-api-key"
-}
-
 # Create a domain
 resource "peakhour_domain" "example" {
   name = "example.com"
@@ -20,7 +6,7 @@ resource "peakhour_domain" "example" {
 # Assign a plan to the domain
 resource "peakhour_domain_plan" "example" {
   domain = peakhour_domain.example.name
-  code   = "basic"  # Change to your plan code (e.g., basic, business, business2)
+  code   = "business2"
 }
 
 # Enable reverse proxy service

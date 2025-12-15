@@ -43,13 +43,8 @@ func (c *Client) CreateImageTransformPreset(domainName string, preset ImageTrans
 }
 
 // UpdateImageTransformPreset updates an existing image transform preset
-func (c *Client) UpdateImageTransformPreset(domainName, presetUUID string, update ImageTransformPresetUpdate) (*ImageTransformPreset, error) {
-	var result ImageTransformPreset
-	err := c.Post(fmt.Sprintf("/api/v1/domains/%s/image-transforms/%s", domainName, presetUUID), update, &result)
-	if err != nil {
-		return nil, err
-	}
-	return &result, nil
+func (c *Client) UpdateImageTransformPreset(domainName, presetUUID string, update ImageTransformPresetUpdate) error {
+	return c.Put(fmt.Sprintf("/api/v1/domains/%s/image-transforms/%s", domainName, presetUUID), update)
 }
 
 // DeleteImageTransformPreset deletes an image transform preset
@@ -59,7 +54,8 @@ func (c *Client) DeleteImageTransformPreset(domainName, presetUUID string) error
 
 // CommitImageTransforms commits changes to image transform settings
 func (c *Client) CommitImageTransforms(domainName string) error {
-	return c.Post(fmt.Sprintf("/api/v1/domains/%s/image-transforms/config/commit", domainName), nil, nil)
+	body := map[string]string{"message": "terraform commit"}
+	return c.Post(fmt.Sprintf("/api/v1/domains/%s/image-transforms/config/commit", domainName), body, nil)
 }
 
 // GetTransformSettings retrieves transform settings

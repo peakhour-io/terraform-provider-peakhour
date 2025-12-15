@@ -395,3 +395,17 @@ type WAFRuleGroup struct {
 type WAFToggle struct {
 	State bool `json:"state"`
 }
+
+// Domain plan types
+type Plan struct {
+	Name string `json:"name"`
+	Code string `json:"code"`
+}
+
+type DomainPlan struct {
+	Plan Plan `json:"plan"`
+}
+
+type DomainPlanAdd struct {
+	Code string `json:"code"`
+}

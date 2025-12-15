@@ -74,13 +74,11 @@ resource "peakhour_rp_waf_custom_rule" "example" {
   depends_on = [peakhour_reverse_proxy_service.example]
 }
 
-# Disable a WAF rule group
-# Note: file_name must match an existing rule group in the database
 resource "peakhour_rp_waf_rule_group" "example" {
   domain = peakhour_domain.example.name
 
-  ruleset   = "peakhour"
-  file_name = "peakhour-waf-rules"  # Must be a valid file_name from the ruleset
+  ruleset   = "owaspv33"
+  file_name = "REQUEST-913-SCANNER-DETECTION.conf"
   enabled   = false
 
   depends_on = [peakhour_reverse_proxy_service.example]

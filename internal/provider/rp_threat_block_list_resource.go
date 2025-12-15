@@ -99,11 +99,7 @@ func (r *RPThreatBlockListResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/rp_threat_block_list")
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading threat block list config after create", err.Error())
-		return
-	}
-
+	// Don't call read() - trust the plan values. Read() will refresh on next plan.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -140,11 +136,7 @@ func (r *RPThreatBlockListResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	plan.ID = types.StringValue(plan.Domain.ValueString() + "/rp_threat_block_list")
-	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
-		resp.Diagnostics.AddError("Error reading threat block list config after update", err.Error())
-		return
-	}
-
+	// Don't call read() - trust the plan values. Read() will refresh on next plan.
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 

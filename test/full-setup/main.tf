@@ -188,18 +188,18 @@ resource "peakhour_origin_pool" "backend" {
   domain = peakhour_domain.mysite.name
   tag    = "production"
 
-  # Multiple backend servers - use URL format: http://host:port or https://host:port
+  # Multiple backend servers
   address = [
     {
-      address = "http://backend1.internal:8080"
+      address = "backend1.internal:8080"
       weight  = 100
     },
     {
-      address = "http://backend2.internal:8080"
+      address = "backend2.internal:8080"
       weight  = 100
     },
     {
-      address = "http://backend3.internal:8080"
+      address = "backend3.internal:8080"
       weight  = 50
     },
   ]
@@ -215,13 +215,12 @@ resource "peakhour_origin_pool" "backend" {
 }
 
 # Configure transforms (image optimization, HTML processing)
-# Note: This resource may return 500 error in some environments due to backend configuration
 resource "peakhour_transform_settings" "mysite" {
   domain = peakhour_domain.mysite.name
 
   # HTML transforms
-  transform_html          = true
-  transform_lazy_sizes    = true
+  transform_html         = true
+  transform_lazy_sizes   = true
   transform_mixed_content = true
 
   # Image optimization
