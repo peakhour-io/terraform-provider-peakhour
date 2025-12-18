@@ -429,28 +429,3 @@ import {
 The import ID format is `domain/uuid`.
 
 ---
-
-## Migration from Nested Config
-
-If you have existing Terraform configurations using the nested format, update them to the flat format:
-
-**Before (nested - deprecated):**
-```hcl
-config_json = jsonencode({
-  size = { w = 300, h = 300, fit = "crop" }
-  format = { fm = "WEBP", q = 80 }
-})
-```
-
-**After (flat - current):**
-```hcl
-config_json = jsonencode({
-  w   = 300
-  h   = 300
-  fit = "crop"
-  fm  = "WEBP"
-  q   = 80
-})
-```
-
-The flat format matches the URL query parameter structure used by the Image Optimization API, making it easier to translate between preset configs and direct URL parameters.
