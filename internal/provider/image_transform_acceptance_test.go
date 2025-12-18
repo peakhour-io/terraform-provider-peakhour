@@ -25,13 +25,13 @@ func TestAccImageTransform_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("peakhour_image_transform.test", "domain", domain),
 					resource.TestCheckResourceAttr("peakhour_image_transform.test", "name", name),
 					resource.TestCheckResourceAttrSet("peakhour_image_transform.test", "uuid"),
-					resource.TestMatchResourceAttr("peakhour_image_transform.test", "config_json", regexp.MustCompile(`"width":200`)),
+					resource.TestMatchResourceAttr("peakhour_image_transform.test", "config_json", regexp.MustCompile(`"w":200`)),
 				),
 			},
 			{
 				Config: testAccImageTransformConfig(domain, name, 300),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr("peakhour_image_transform.test", "config_json", regexp.MustCompile(`"width":300`)),
+					resource.TestMatchResourceAttr("peakhour_image_transform.test", "config_json", regexp.MustCompile(`"w":300`)),
 				),
 			},
 			{
@@ -60,10 +60,10 @@ resource "peakhour_image_transform" "test" {
   name   = %q
 
   config_json = jsonencode({
-    width   = %d
-    height  = 200
-    fit     = "cover"
-    quality = 80
+    w   = %d
+    h   = 200
+    fit = "crop"
+    q   = 80
   })
 }
 `, domain, name, width)

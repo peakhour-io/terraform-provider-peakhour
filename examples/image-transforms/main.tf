@@ -28,14 +28,10 @@ resource "peakhour_image_transform" "thumbnail" {
   domain = peakhour_domain.images.name
   name   = "thumbnail"
   config_json = jsonencode({
-    size = {
-      w   = 200
-      h   = 200
-      fit = "crop"  # Valid: clip, crop, fill, scale, facearea
-    }
-    format = {
-      q = 80  # Quality 0-100 or "auto", "auto:high", "auto:med", "auto:low"
-    }
+    w   = 200
+    h   = 200
+    fit = "crop"  # Valid: clip, crop, fill, scale, facearea
+    q   = 80      # Quality 0-100 or "auto", "auto:high", "auto:med", "auto:low"
   })
 
   depends_on = [peakhour_reverse_proxy_service.images]
@@ -45,13 +41,9 @@ resource "peakhour_image_transform" "hero" {
   domain = peakhour_domain.images.name
   name   = "hero"
   config_json = jsonencode({
-    size = {
-      w = 1200
-    }
-    format = {
-      fm = "WEBP"  # Valid: GIF, JPEG, PNG, WEBP, SVG, AVIF, JXL
-      q  = "auto"
-    }
+    w  = 1200
+    fm = "WEBP"  # Valid: GIF, JPEG, PNG, WEBP, SVG, AVIF, JXL
+    q  = "auto"
   })
 
   depends_on = [peakhour_reverse_proxy_service.images]
