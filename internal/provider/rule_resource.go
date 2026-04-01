@@ -215,7 +215,15 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 		return
 	}
-	state.ActionsJSON = jsontypes.NewNormalizedValue(string(actionsJSON))
+	normalizedActionsJSON, err := normalizeJSONDropNullObjectKeys(string(actionsJSON))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error normalizing actions",
+			"Could not normalize actions JSON: "+err.Error(),
+		)
+		return
+	}
+	state.ActionsJSON = jsontypes.NewNormalizedValue(normalizedActionsJSON)
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)

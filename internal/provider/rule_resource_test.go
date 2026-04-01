@@ -89,3 +89,50 @@ func TestNormalizeJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeJSONDropNullObjectKeys(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "drops null object keys",
+			input:    `{"vconf":[{"type":"vconf","edge_ttl_sec":60,"auth_req":null,"blocklists":null}]}`,
+			expected: `{"vconf":[{"edge_ttl_sec":60,"type":"vconf"}]}`,
+			wantErr:  false,
+		},
+		{
+			name:     "drops nested null keys",
+			input:    `{"outer":{"inner":null,"inner2":{"x":null,"y":1}}}`,
+			expected: `{"outer":{"inner2":{"y":1}}}`,
+			wantErr:  false,
+		},
+		{
+			name:     "preserves null array elements",
+			input:    `{"arr":[null,{"a":null,"b":1}]}`,
+			expected: `{"arr":[null,{"b":1}]}`,
+			wantErr:  false,
+		},
+		{
+			name:     "invalid json",
+			input:    `{invalid`,
+			expected: "",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizeJSONDropNullObjectKeys(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("normalizeJSONDropNullObjectKeys() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.expected {
+				t.Errorf("normalizeJSONDropNullObjectKeys() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
