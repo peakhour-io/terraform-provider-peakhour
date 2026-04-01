@@ -60,7 +60,7 @@ vet:
 	go vet ./...
 
 clean:
-	rm -f terraform-provider-peakhour terraform-provider-peakhour_*
+	rm -f terraform-provider-peakhour terraform-provider-peakhour_* peakhour-tf-onboard_*
 	rm -rf examples/*/.terraform
 	rm -rf examples/*/.terraform.lock.hcl
 	rm -rf examples/*/terraform.tfstate*
@@ -94,6 +94,8 @@ dist-mirror:
 	  CGO_ENABLED=0 GOOS="$$OS" GOARCH="$$ARCH" \
 	    go build -ldflags "-X main.version=$$V" \
 	    -o "$$OUTDIR/terraform-provider-$${NAME}_v$$V$${EXT}" .; \
+	  CGO_ENABLED=0 GOOS="$$OS" GOARCH="$$ARCH" \
+	    go build -o "$$OUTDIR/peakhour-tf-onboard_v$$V$${EXT}" ./cmd/peakhour-tf-onboard; \
 	done; \
 	cd "$$D"; \
 	if command -v sha256sum >/dev/null 2>&1; then \
@@ -101,32 +103,39 @@ dist-mirror:
 	else \
 	  shasum -a 256 $$(find "$$HOST" -type f) > SHA256SUMS; \
 	fi; \
-	tar -czf "peakhour-provider_$$V.tar.gz" "$$HOST" SHA256SUMS; \
-	echo "Wrote $$D/peakhour-provider_$$V.tar.gz"
+	tar -cJf "peakhour-provider_$$V.tar.xz" "$$HOST" SHA256SUMS; \
+	echo "Wrote $$D/peakhour-provider_$$V.tar.xz"
 
 # Beta bundle for distribution to testers
 beta-bundle: build-all
 	@set -euo pipefail; \
 	V="$(VERSION)"; \
-	BUNDLE_DIR="peakhour-terraform-beta-$$V"; \
-	rm -rf "$$BUNDLE_DIR" "$$BUNDLE_DIR.zip"; \
-	mkdir -p "$$BUNDLE_DIR"; \
-	cp $(BINARY_NAME)_linux_amd64 "$$BUNDLE_DIR/"; \
-	cp $(BINARY_NAME)_linux_arm64 "$$BUNDLE_DIR/"; \
-	cp $(BINARY_NAME)_darwin_amd64 "$$BUNDLE_DIR/"; \
-	cp $(BINARY_NAME)_darwin_arm64 "$$BUNDLE_DIR/"; \
-	cp $(BINARY_NAME)_windows_amd64.exe "$$BUNDLE_DIR/"; \
-	cp BETA_TESTER_GUIDE.md "$$BUNDLE_DIR/README.md"; \
-	rsync -a --exclude='.terraform' --exclude='.terraform.lock.hcl' \
-	  --exclude='terraform.tfstate*' --exclude='*.tfrc' \
-	  examples/ "$$BUNDLE_DIR/examples/"; \
-	cd "$$BUNDLE_DIR" && \
-	if command -v sha256sum >/dev/null 2>&1; then \
-	  sha256sum $(BINARY_NAME)_* > SHA256SUMS; \
-	else \
-	  shasum -a 256 $(BINARY_NAME)_* > SHA256SUMS; \
-	fi; \
-	cd ..; \
-	zip -9 -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
-	rm -rf "$$BUNDLE_DIR"; \
-	ls -lh "$$BUNDLE_DIR.zip"
+	rm -rf peakhour-terraform-beta-$$V-*; \
+	for PLATFORM in $(RELEASE_PLATFORMS); do \
+	  OS="$${PLATFORM%_*}"; \
+	  ARCH="$${PLATFORM#*_}"; \
+	  EXT=""; \
+	  if [[ "$$OS" == "windows" ]]; then EXT=".exe"; fi; \
+	  BUNDLE_DIR="peakhour-terraform-beta-$$V-$${OS}_$${ARCH}"; \
+	  rm -rf "$$BUNDLE_DIR" "$$BUNDLE_DIR.tar.xz" "$$BUNDLE_DIR.zip"; \
+	  mkdir -p "$$BUNDLE_DIR"; \
+	  cp "$(BINARY_NAME)_$${OS}_$${ARCH}$${EXT}" "$$BUNDLE_DIR/"; \
+	  CGO_ENABLED=0 GOOS="$$OS" GOARCH="$$ARCH" \
+	    go build -o "peakhour-tf-onboard_$${OS}_$${ARCH}$${EXT}" ./cmd/peakhour-tf-onboard; \
+	  cp "peakhour-tf-onboard_$${OS}_$${ARCH}$${EXT}" "$$BUNDLE_DIR/"; \
+	  cp BETA_TESTER_GUIDE.md "$$BUNDLE_DIR/README.md"; \
+	  rsync -a --exclude='.terraform' --exclude='.terraform.lock.hcl' \
+	    --exclude='terraform.tfstate*' --exclude='*.tfrc' \
+	    examples/ "$$BUNDLE_DIR/examples/"; \
+	  cd "$$BUNDLE_DIR" && \
+	  if command -v sha256sum >/dev/null 2>&1; then \
+	    sha256sum $(BINARY_NAME)_* peakhour-tf-onboard_* > SHA256SUMS; \
+	  else \
+	    shasum -a 256 $(BINARY_NAME)_* peakhour-tf-onboard_* > SHA256SUMS; \
+	  fi; \
+	  cd ..; \
+	  tar -cJf "$$BUNDLE_DIR.tar.xz" "$$BUNDLE_DIR"; \
+	  zip -9 -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
+	  rm -rf "$$BUNDLE_DIR"; \
+	done; \
+	ls -lh peakhour-terraform-beta-$$V-*.tar.xz peakhour-terraform-beta-$$V-*.zip
