@@ -168,7 +168,10 @@ func (r *RPWAFCustomRuleResource) Create(ctx context.Context, req resource.Creat
 	plan.Created = types.StringValue(created.Created)
 	plan.ID = types.StringValue(fmt.Sprintf("%s/customrule/%s", plan.Domain.ValueString(), created.UUID))
 
-	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
+	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
+		resp.Diagnostics.AddError("Error reading WAF custom rule after create", err.Error())
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -194,9 +197,7 @@ func (r *RPWAFCustomRuleResource) Read(ctx context.Context, req resource.ReadReq
 
 func (r *RPWAFCustomRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan RPWAFCustomRuleResourceModel
-	var state RPWAFCustomRuleResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -211,9 +212,10 @@ func (r *RPWAFCustomRuleResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	// Don't read from API - trust the plan values. Semantic equality in Read handles drift.
-	// Preserve computed fields from state that don't change during update.
-	plan.RuleID = state.RuleID
+	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
+		resp.Diagnostics.AddError("Error reading WAF custom rule after update", err.Error())
+		return
+	}
 	plan.ID = types.StringValue(fmt.Sprintf("%s/customrule/%s", plan.Domain.ValueString(), plan.UUID.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }

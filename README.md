@@ -490,6 +490,44 @@ See [examples/waf/main.tf](examples/waf/main.tf).
 
 ---
 
+### `peakhour_rp_waf_custom_rule_order`
+
+Manages the order of custom WAF rules for a domain. The order is a separate
+resource because rule UUIDs remain the identity of each custom rule. The
+Peakhour API always receives a complete order; `include_all_rules` controls
+whether Terraform owns that complete membership or only the relative order of
+the listed rules.
+
+```hcl
+resource "peakhour_rp_waf_custom_rule_order" "example" {
+  domain = "example.com"
+
+  # Allows custom rules to be added or removed in the same apply.
+  include_all_rules = false
+
+  order = [
+    peakhour_rp_waf_custom_rule.block_admin.uuid,
+    peakhour_rp_waf_custom_rule.challenge_bots.uuid,
+  ]
+}
+```
+
+The default, `include_all_rules = true`, requires every custom WAF rule UUID
+currently configured for the domain and surfaces out-of-band additions or
+removals as drift. Set it to `false` when the list is composed from individual
+Terraform-managed rule resources; the provider preserves unlisted live rules
+while sending the complete order required by the REST API.
+
+Existing order can be imported with the domain name:
+
+```shell
+terraform import peakhour_rp_waf_custom_rule_order.example example.com
+```
+
+See [examples/waf/main.tf](examples/waf/main.tf).
+
+---
+
 ### `peakhour_rp_waf_rule_group`
 
 Manages the enabled state of a WAF rule group (file) within a ruleset.

@@ -74,13 +74,22 @@ resource "peakhour_rp_waf_custom_rule" "example" {
   depends_on = [peakhour_reverse_proxy_service.example]
 }
 
+# Ordering is managed separately so each rule keeps its stable UUID identity.
+# Subset mode permits rules to be added or removed in the same apply while the
+# provider still sends the complete order required by the Peakhour API.
+resource "peakhour_rp_waf_custom_rule_order" "example" {
+  domain            = peakhour_domain.example.name
+  include_all_rules = false
+  order             = [peakhour_rp_waf_custom_rule.example.uuid]
+}
+
 # Disable a WAF rule group
 # Note: file_name must match an existing rule group in the database
 resource "peakhour_rp_waf_rule_group" "example" {
   domain = peakhour_domain.example.name
 
   ruleset   = "peakhour"
-  file_name = "peakhour-waf-rules"  # Must be a valid file_name from the ruleset
+  file_name = "peakhour-waf-rules" # Must be a valid file_name from the ruleset
   enabled   = false
 
   depends_on = [peakhour_reverse_proxy_service.example]

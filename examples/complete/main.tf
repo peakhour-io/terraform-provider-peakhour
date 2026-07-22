@@ -407,6 +407,15 @@ resource "peakhour_rp_waf_custom_rule" "protect_login" {
   depends_on = [peakhour_reverse_proxy_service.main]
 }
 
+resource "peakhour_rp_waf_custom_rule_order" "main" {
+  domain            = peakhour_domain.main.name
+  include_all_rules = false
+  order = [
+    peakhour_rp_waf_custom_rule.sql_injection.uuid,
+    peakhour_rp_waf_custom_rule.protect_login.uuid,
+  ]
+}
+
 # Disable a peakhour rule group
 resource "peakhour_rp_waf_rule_group" "disable_example" {
   domain = peakhour_domain.main.name

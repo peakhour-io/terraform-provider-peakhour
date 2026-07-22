@@ -141,6 +141,22 @@ func TestProviderResources_IncludeRulePhaseOrder(t *testing.T) {
 	}
 }
 
+func TestProviderResources_IncludeRPWAFCustomRuleOrder(t *testing.T) {
+	p := provider.New("test")()
+
+	names := map[string]struct{}{}
+	for _, factory := range p.Resources(context.Background()) {
+		res := factory()
+		var resp resource.MetadataResponse
+		res.Metadata(context.Background(), resource.MetadataRequest{ProviderTypeName: "peakhour"}, &resp)
+		names[resp.TypeName] = struct{}{}
+	}
+
+	if _, ok := names["peakhour_rp_waf_custom_rule_order"]; !ok {
+		t.Fatalf("provider should register peakhour_rp_waf_custom_rule_order resource, got %v", sortedKeys(names))
+	}
+}
+
 func TestProviderResources_IncludeConfigBacklogResources(t *testing.T) {
 	p := provider.New("test")()
 

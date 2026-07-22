@@ -261,6 +261,7 @@ func TestCollectDomainInventory_Basic(t *testing.T) {
 		{TypeName: "peakhour_rp_threat_block_list", Name: "threat_block_list", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_custom_rule", Name: "wafcr-1", ImportID: "example.com/customrule/wafcr-1"},
 		{TypeName: "peakhour_rp_waf_custom_rule", Name: "wafcr-2", ImportID: "example.com/customrule/wafcr-2"},
+		{TypeName: "peakhour_rp_waf_custom_rule_order", Name: "waf_custom_rule_order", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_options", Name: "waf", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_owasp_settings", Name: "waf_owasp", ImportID: "example.com"},
 		{TypeName: "peakhour_rp_waf_rule_group", Name: "owaspv33_REQUEST-901-INITIALIZATION.conf", ImportID: "example.com/ruleset/owaspv33/rulegroup/REQUEST-901-INITIALIZATION.conf"},
