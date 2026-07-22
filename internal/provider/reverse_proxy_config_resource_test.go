@@ -38,8 +38,8 @@ func TestReverseProxyConfigResource_deleteConfig_ResetsConfig(t *testing.T) {
 				}
 			}
 			// Just checking a few representative fields is enough for TDD cycle
-			if v, ok := body["redirect_mode"]; !ok || v != "" {
-				t.Errorf("Expected redirect_mode: \"\", got %v", v)
+			if v, ok := body["redirect_mode"]; !ok || v != "none" {
+				t.Errorf("Expected redirect_mode: \"none\", got %v", v)
 			}
 			w.WriteHeader(http.StatusOK)
 		} else {
