@@ -1,5 +1,11 @@
 # WAF Custom Rule Contract Implementation Plan
 
+> **Compatibility update:** The provider no longer requires this stable REST
+> extension. Custom-rule names are not exposed by the Terraform resource,
+> enabled state is reconciled through the existing toggle endpoint, and valid
+> complete-order requests work with the pre-existing stable reorder endpoint.
+> The stable changes below remain optional API and UI enhancements.
+
 > **For agentic workers:** REQUIRED: Use `subagent-driven-development` (if subagents available) or `executing-plans` to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make stable REST, its WAF UI, and Terraform converge on named custom rules, explicit enabled state, deterministic ordering, and legacy rules whose name is absent.

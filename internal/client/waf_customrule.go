@@ -26,7 +26,7 @@ func (c *Client) DeleteRPWAFCustomRule(domainName string, ruleUUID string) error
 	return c.Delete(fmt.Sprintf("/api/v1/domains/%s/services/rp/waf/customrule/%s", domainName, ruleUUID), nil)
 }
 
-func (c *Client) EnableRPWAFCustomRule(domainName string, ruleUUID string) error {
+func (c *Client) ToggleRPWAFCustomRule(domainName string, ruleUUID string) error {
 	return c.Patch(fmt.Sprintf("/api/v1/domains/%s/services/rp/waf/customrule/%s/enable", domainName, ruleUUID), nil)
 }
 

@@ -157,6 +157,21 @@ func TestProviderResources_IncludeRPWAFCustomRuleOrder(t *testing.T) {
 	}
 }
 
+func TestRPWAFCustomRuleSchema_UsesStableAPIContract(t *testing.T) {
+	res := getResourceByTypeName(t, "peakhour_rp_waf_custom_rule")
+
+	var resp resource.SchemaResponse
+	res.Schema(context.Background(), resource.SchemaRequest{}, &resp)
+
+	attrs := resp.Schema.Attributes
+	if _, ok := attrs["enabled"]; !ok {
+		t.Fatal("rp_waf_custom_rule schema missing enabled attribute")
+	}
+	if _, ok := attrs["name"]; ok {
+		t.Fatal("rp_waf_custom_rule schema must not expose unsupported name attribute")
+	}
+}
+
 func TestProviderResources_IncludeConfigBacklogResources(t *testing.T) {
 	p := provider.New("test")()
 

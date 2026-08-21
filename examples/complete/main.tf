@@ -348,7 +348,6 @@ resource "peakhour_rp_waf_owasp_settings" "main" {
 resource "peakhour_rp_waf_custom_rule" "sql_injection" {
   domain = peakhour_domain.main.name
 
-  name        = "Custom SQL Injection Detection"
   description = "Block common SQL injection patterns"
   enabled     = true
 
@@ -377,7 +376,6 @@ resource "peakhour_rp_waf_custom_rule" "sql_injection" {
 resource "peakhour_rp_waf_custom_rule" "protect_login" {
   domain = peakhour_domain.main.name
 
-  name        = "Login Protection"
   description = "Extra protection for login endpoint"
   enabled     = true
 

@@ -12,10 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccRPWAFCustomRule_ReadsAfterCreate(t *testing.T) {
+func TestAccRPWAFCustomRule_ReconcilesEnabledWithToggleEndpoint(t *testing.T) {
 	var reads atomic.Int32
-	var currentName atomic.Value
-	currentName.Store("Terraform rule")
+	var toggles atomic.Int32
+	var currentEnabled atomic.Bool
+	currentEnabled.Store(true)
 	const ruleUUID = "11111111-1111-1111-1111-111111111111"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,15 +25,29 @@ func TestAccRPWAFCustomRule_ReadsAfterCreate(t *testing.T) {
 		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule":
 			var body map[string]any
 			_ = json.NewDecoder(r.Body).Decode(&body)
-			currentName.Store(body["name"].(string))
-			_ = json.NewEncoder(w).Encode(testWAFCustomRuleResponse(ruleUUID, currentName.Load().(string)))
+			if _, ok := body["name"]; ok {
+				t.Error("create request must not send unsupported custom rule name")
+			}
+			if _, ok := body["enabled"]; ok {
+				t.Error("create request must manage enabled state through the toggle endpoint")
+			}
+			_ = json.NewEncoder(w).Encode(testWAFCustomRuleResponse(ruleUUID, currentEnabled.Load()))
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule":
 			reads.Add(1)
-			_ = json.NewEncoder(w).Encode([]any{testWAFCustomRuleResponse(ruleUUID, currentName.Load().(string))})
+			_ = json.NewEncoder(w).Encode([]any{testWAFCustomRuleResponse(ruleUUID, currentEnabled.Load())})
 		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule/"+ruleUUID:
 			var body map[string]any
 			_ = json.NewDecoder(r.Body).Decode(&body)
-			currentName.Store(body["name"].(string))
+			if _, ok := body["name"]; ok {
+				t.Error("update request must not send unsupported custom rule name")
+			}
+			if _, ok := body["enabled"]; ok {
+				t.Error("update request must manage enabled state through the toggle endpoint")
+			}
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule/"+ruleUUID+"/enable":
+			currentEnabled.Store(!currentEnabled.Load())
+			toggles.Add(1)
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule/"+ruleUUID:
 			w.WriteHeader(http.StatusNoContent)
@@ -54,18 +69,24 @@ func TestAccRPWAFCustomRule_ReadsAfterCreate(t *testing.T) {
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{{
-			Config: testUnitWAFCustomRuleConfig("Terraform rule"),
+			Config: testUnitWAFCustomRuleConfig(false),
 			Check: func(_ *terraform.State) error {
 				if reads.Load() == 0 {
 					return fmt.Errorf("expected a GET after create")
 				}
+				if toggles.Load() != 1 {
+					return fmt.Errorf("toggle calls after create = %d, want 1", toggles.Load())
+				}
 				return nil
 			},
 		}, {
-			Config: testUnitWAFCustomRuleConfig("Updated Terraform rule"),
+			Config: testUnitWAFCustomRuleConfig(true),
 			Check: func(_ *terraform.State) error {
 				if reads.Load() < 2 {
 					return fmt.Errorf("expected a GET after update")
+				}
+				if toggles.Load() != 2 {
+					return fmt.Errorf("toggle calls after update = %d, want 2", toggles.Load())
 				}
 				return nil
 			},
@@ -73,17 +94,17 @@ func TestAccRPWAFCustomRule_ReadsAfterCreate(t *testing.T) {
 	})
 }
 
-func testWAFCustomRuleResponse(uuid, name string) map[string]any {
+func testWAFCustomRuleResponse(uuid string, enabled bool) map[string]any {
 	return map[string]any{
 		"uuid": uuid, "rule_id": 1, "created": "2026-07-22T00:00:00Z",
-		"name": name, "description": nil, "enabled": true,
+		"name": nil, "description": nil, "enabled": enabled,
 		"rules":   []any{map[string]any{"variable": "ARGS", "operator": "@contains", "operator_arg": "bad"}},
 		"action":  map[string]any{"action_name": "deny"},
 		"logging": map[string]any{"message": "blocked", "severity": "INFO", "tags": []any{}},
 	}
 }
 
-func testUnitWAFCustomRuleConfig(name string) string {
+func testUnitWAFCustomRuleConfig(enabled bool) string {
 	return fmt.Sprintf(`
 terraform {
   required_providers {
@@ -93,11 +114,10 @@ terraform {
 provider "peakhour" {}
 resource "peakhour_rp_waf_custom_rule" "test" {
   domain       = "example.com"
-  name         = %q
-  enabled      = true
+  enabled      = %t
   rules_json   = jsonencode([{ variable = "ARGS", operator = "@contains", operator_arg = "bad" }])
   action_json  = jsonencode({ action_name = "deny" })
   logging_json = jsonencode({ message = "blocked", severity = "INFO", tags = [] })
 }
-`, name)
+`, enabled)
 }

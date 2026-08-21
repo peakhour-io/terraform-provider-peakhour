@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	phclient "github.com/peakhour-io/terraform-provider-peakhour/internal/client"
@@ -108,17 +107,16 @@ func TestAccRPWAFCustomRule_basic(t *testing.T) {
 	testAccPreCheck(t)
 
 	domain := testAccEnv(t, "PEAKHOUR_TEST_DOMAIN")
-	name := fmt.Sprintf("tfacc-%s", acctest.RandString(8))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRPWAFCustomRuleConfig(domain, name),
+				Config: testAccRPWAFCustomRuleConfig(domain),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "domain", domain),
-					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "name", name),
+					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "enabled", "false"),
 					resource.TestCheckResourceAttrSet("peakhour_rp_waf_custom_rule.test", "uuid"),
 					resource.TestCheckResourceAttrSet("peakhour_rp_waf_custom_rule.test", "rule_id"),
 					resource.TestCheckResourceAttrSet("peakhour_rp_waf_custom_rule.test", "created"),
@@ -134,7 +132,7 @@ func TestAccRPWAFCustomRule_basic(t *testing.T) {
 	})
 }
 
-func testAccRPWAFCustomRuleConfig(domain, name string) string {
+func testAccRPWAFCustomRuleConfig(domain string) string {
 	return fmt.Sprintf(`
 terraform {
   required_providers {
@@ -149,9 +147,8 @@ provider "peakhour" {}
 resource "peakhour_rp_waf_custom_rule" "test" {
   domain = %q
 
-  name        = %q
   description = "tfacc custom rule"
-  enabled     = true
+  enabled     = false
 
   rules_json = jsonencode([
     {
@@ -181,7 +178,7 @@ resource "peakhour_rp_waf_custom_rule" "test" {
     tags     = ["terraform"]
   })
 }
-`, domain, name)
+`, domain)
 }
 
 func TestAccRPWAFRuleGroup_basic(t *testing.T) {

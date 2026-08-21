@@ -13,7 +13,7 @@ build:
 	go build -o $(BINARY_NAME)
 
 # Build flags for smaller binaries (-s strips symbol table, -w strips DWARF)
-LDFLAGS = -s -w
+LDFLAGS = -s -w -X main.version=$(VERSION)
 GOBUILD = GOTOOLCHAIN=local CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)"
 
 # Individual platform builds (stripped)
@@ -123,7 +123,8 @@ beta-bundle: build-all
 	  CGO_ENABLED=0 GOOS="$$OS" GOARCH="$$ARCH" \
 	    go build -o "peakhour-tf-onboard_$${OS}_$${ARCH}$${EXT}" ./cmd/peakhour-tf-onboard; \
 	  cp "peakhour-tf-onboard_$${OS}_$${ARCH}$${EXT}" "$$BUNDLE_DIR/"; \
-	  cp BETA_TESTER_GUIDE.md "$$BUNDLE_DIR/README.md"; \
+	  sed "s/^\*\*Provider Version:\*\*.*/**Provider Version:** $$V (Beta)/" \
+	    BETA_TESTER_GUIDE.md > "$$BUNDLE_DIR/README.md"; \
 	  rsync -a --exclude='.terraform' --exclude='.terraform.lock.hcl' \
 	    --exclude='terraform.tfstate*' --exclude='*.tfrc' \
 	    examples/ "$$BUNDLE_DIR/examples/"; \
@@ -135,7 +136,11 @@ beta-bundle: build-all
 	  fi; \
 	  cd ..; \
 	  tar -cJf "$$BUNDLE_DIR.tar.xz" "$$BUNDLE_DIR"; \
-	  zip -9 -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
+	  if command -v zip >/dev/null 2>&1; then \
+	    zip -9 -r "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
+	  else \
+	    python3 -m zipfile -c "$$BUNDLE_DIR.zip" "$$BUNDLE_DIR"; \
+	  fi; \
 	  rm -rf "$$BUNDLE_DIR"; \
 	done; \
 	ls -lh peakhour-terraform-beta-$$V-*.tar.xz peakhour-terraform-beta-$$V-*.zip

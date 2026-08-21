@@ -1246,8 +1246,8 @@ func TestClient_ConfigEndpoints(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("UpdateRPWAFCustomRule failed: %v", err)
 	}
-	if err := c.EnableRPWAFCustomRule("example.com", created.UUID); err != nil {
-		t.Fatalf("EnableRPWAFCustomRule failed: %v", err)
+	if err := c.ToggleRPWAFCustomRule("example.com", created.UUID); err != nil {
+		t.Fatalf("ToggleRPWAFCustomRule failed: %v", err)
 	}
 	if err := c.ReorderRPWAFCustomRules("example.com", []string{created.UUID}); err != nil {
 		t.Fatalf("ReorderRPWAFCustomRules failed: %v", err)

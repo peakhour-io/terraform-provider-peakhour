@@ -36,7 +36,6 @@ type RPWAFCustomRuleResourceModel struct {
 	RuleID  types.Int64  `tfsdk:"rule_id"`
 	Created types.String `tfsdk:"created"`
 
-	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 
@@ -80,14 +79,6 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 			},
 			"created": schema.StringAttribute{
 				Description: "Creation timestamp (RFC3339, computed).",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"name": schema.StringAttribute{
-				Description: "Custom rule name. Set to null to clear.",
-				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -168,6 +159,10 @@ func (r *RPWAFCustomRuleResource) Create(ctx context.Context, req resource.Creat
 	plan.Created = types.StringValue(created.Created)
 	plan.ID = types.StringValue(fmt.Sprintf("%s/customrule/%s", plan.Domain.ValueString(), created.UUID))
 
+	if err := r.reconcileEnabled(plan.Domain.ValueString(), created.UUID, plan.Enabled.ValueBool()); err != nil {
+		resp.Diagnostics.AddError("Error setting WAF custom rule enabled state after create", err.Error())
+		return
+	}
 	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
 		resp.Diagnostics.AddError("Error reading WAF custom rule after create", err.Error())
 		return
@@ -212,6 +207,10 @@ func (r *RPWAFCustomRuleResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	if err := r.reconcileEnabled(plan.Domain.ValueString(), plan.UUID.ValueString(), plan.Enabled.ValueBool()); err != nil {
+		resp.Diagnostics.AddError("Error setting WAF custom rule enabled state after update", err.Error())
+		return
+	}
 	if err := r.read(ctx, &plan, &resp.Diagnostics); err != nil {
 		resp.Diagnostics.AddError("Error reading WAF custom rule after update", err.Error())
 		return
@@ -272,18 +271,13 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 		return &client.APIError{StatusCode: 404, Body: "custom rule not found"}
 	}
 
-	if found.Name == nil {
-		model.Name = types.StringNull()
-	} else {
-		model.Name = types.StringValue(*found.Name)
-	}
 	if found.Description == nil {
 		model.Description = types.StringNull()
 	} else {
 		model.Description = types.StringValue(*found.Description)
 	}
 	if found.Enabled == nil {
-		model.Enabled = types.BoolNull()
+		model.Enabled = types.BoolValue(false)
 	} else {
 		model.Enabled = types.BoolValue(*found.Enabled)
 	}
@@ -316,30 +310,39 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 	return nil
 }
 
+func (r *RPWAFCustomRuleResource) reconcileEnabled(domain, uuid string, desired bool) error {
+	rules, err := r.client.ListRPWAFCustomRules(domain)
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range rules {
+		if rule.UUID != uuid {
+			continue
+		}
+
+		current := false
+		if rule.Enabled != nil {
+			current = *rule.Enabled
+		}
+		if current == desired {
+			return nil
+		}
+
+		return r.client.ToggleRPWAFCustomRule(domain, uuid)
+	}
+
+	return fmt.Errorf("custom rule %q not found", uuid)
+}
+
 func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceModel, diags *diag.Diagnostics) map[string]any {
 	body := map[string]any{}
-
-	if !model.Name.IsUnknown() {
-		if model.Name.IsNull() {
-			body["name"] = nil
-		} else {
-			body["name"] = model.Name.ValueString()
-		}
-	}
 
 	if !model.Description.IsUnknown() {
 		if model.Description.IsNull() {
 			body["description"] = nil
 		} else {
 			body["description"] = model.Description.ValueString()
-		}
-	}
-
-	if !model.Enabled.IsUnknown() {
-		if model.Enabled.IsNull() {
-			body["enabled"] = nil
-		} else {
-			body["enabled"] = model.Enabled.ValueBool()
 		}
 	}
 
