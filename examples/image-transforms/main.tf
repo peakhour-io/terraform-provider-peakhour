@@ -30,8 +30,8 @@ resource "peakhour_image_transform" "thumbnail" {
   config_json = jsonencode({
     w   = 200
     h   = 200
-    fit = "crop"  # Valid: clip, crop, fill, scale, facearea
-    q   = 80      # Quality 0-100 or "auto", "auto:high", "auto:med", "auto:low"
+    fit = "crop" # Valid: clip, crop, fill, scale, facearea
+    q   = 80     # Quality 0-100 or "auto", "auto:high", "auto:med", "auto:low"
   })
 
   depends_on = [peakhour_reverse_proxy_service.images]
@@ -42,7 +42,7 @@ resource "peakhour_image_transform" "hero" {
   name   = "hero"
   config_json = jsonencode({
     w  = 1200
-    fm = "WEBP"  # Valid: GIF, JPEG, PNG, WEBP, SVG, AVIF, JXL
+    fm = "WEBP" # Valid: GIF, JPEG, PNG, WEBP, SVG, AVIF, JXL
     q  = "auto"
   })
 

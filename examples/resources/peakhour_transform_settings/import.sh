@@ -1,0 +1,1 @@
+terraform import peakhour_transform_settings.example example.com

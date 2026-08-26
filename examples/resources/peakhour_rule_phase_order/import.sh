@@ -1,0 +1,1 @@
+terraform import peakhour_rule_phase_order.example example.com/firewall

@@ -27,7 +27,7 @@ terraform apply -auto-approve
 
 ## API Endpoint / Base URL
 
-By default, the provider and onboarding CLI talk to `https://console.peakhour.io`.
+By default, the provider and onboarding CLI talk to `https://www.peakhour.io`.
 
 To point at a different API endpoint (staging, local proxy, etc.), set `PEAKHOUR_BASE_URL`:
 

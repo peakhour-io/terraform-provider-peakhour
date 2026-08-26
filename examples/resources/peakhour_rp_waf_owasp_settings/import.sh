@@ -1,0 +1,1 @@
+terraform import peakhour_rp_waf_owasp_settings.example example.com

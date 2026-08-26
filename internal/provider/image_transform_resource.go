@@ -27,10 +27,10 @@ type ImageTransformResource struct {
 }
 
 type ImageTransformResourceModel struct {
-	ID         types.String         `tfsdk:"id"`
-	Domain     types.String         `tfsdk:"domain"`
-	UUID       types.String         `tfsdk:"uuid"`
-	Name       types.String         `tfsdk:"name"`
+	ID         types.String        `tfsdk:"id"`
+	Domain     types.String        `tfsdk:"domain"`
+	UUID       types.String        `tfsdk:"uuid"`
+	Name       types.String        `tfsdk:"name"`
 	ConfigJSON JSONNormalizedValue `tfsdk:"config_json"`
 }
 

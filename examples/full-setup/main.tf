@@ -27,7 +27,7 @@ resource "peakhour_reverse_proxy_config" "mysite" {
   domain = peakhour_domain.mysite.name
 
   # Compression
-  gzip   = true
+  gzip = true
   # brotli = true # Commented out to demonstrate partial update - will persist previous value
 
   # WebSocket support
@@ -117,7 +117,7 @@ resource "peakhour_rp_origin_config" "mysite" {
 resource "peakhour_rp_cdn_cache" "mysite" {
   domain = peakhour_domain.mysite.name
 
-  cache_enabled = true
+  cache_enabled  = true
   cdn_query_mode = "full"
 
   cdn_remove_query_args = ["utm_source", "utm_medium"]

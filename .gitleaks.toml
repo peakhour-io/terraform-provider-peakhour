@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local ignored development and build directories"
+paths = [
+  '''^\.codex/''',
+  '''^\.toolchains/''',
+  '''^dist/''',
+]

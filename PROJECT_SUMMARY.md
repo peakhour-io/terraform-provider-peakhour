@@ -185,20 +185,19 @@ terraform apply
 | OpenAPI Generator (experimental) | ✅ Auto-generated | ❌ Unreliable, limited customization |
 | Manual curl scripts | ✅ Simple | ❌ No state management, error-prone |
 
-## Files Created
+## Repository Surface
 
-- 18 Go source files (client + resources)
-- 5 example configurations (basic, full-setup, rules, rate-limiting, rule-lists)
-- 5 documentation files (README, QUICKSTART, PROJECT_SUMMARY, RULES_GUIDE, RULES_UPDATE)
-- 1 Makefile
-- Total: ~3500 lines of code
+- 37 managed resources and 1 data source
+- Runnable scenario examples plus generated Registry examples for every resource
+- Generated provider, resource, data-source, and import documentation
+- Automated tests, vulnerability and secret scanning, release rehearsal, and signed release packaging
 
 ## Dependencies
 
-- `github.com/hashicorp/terraform-plugin-framework` v1.12.0
-- `github.com/hashicorp/terraform-plugin-go` v0.24.0
-- `github.com/hashicorp/terraform-plugin-log` v0.9.0
-- Go 1.22+
+- `github.com/hashicorp/terraform-plugin-framework` v1.19.0
+- `github.com/hashicorp/terraform-plugin-go` v0.31.0
+- `github.com/hashicorp/terraform-plugin-testing` v1.16.0
+- Go 1.26.7+
 
 ## Status
 
@@ -216,7 +215,7 @@ For issues or questions:
 
 ## Key Features Implemented
 
-### 8 Resources
+### 37 Resources
 - ✅ Domain management
 - ✅ Reverse proxy service enablement
 - ✅ Reverse proxy configuration (compression, WebSocket, redirects)
@@ -232,7 +231,7 @@ For issues or questions:
 - ✅ JSON-based actions (supports all action types)
 - ✅ Rate limiting with zone keys (IP, header, cookie)
 - ✅ List-based filtering ($list_name syntax)
-- ✅ Import support for all resources
+- ✅ Import support for all 33 stateful resources
 - ✅ Proper dependency management
 
 ### Examples Include

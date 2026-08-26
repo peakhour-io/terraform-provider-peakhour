@@ -22,7 +22,7 @@ resource "peakhour_origin_pool" "backend" {
 
   address = [
     {
-      address = "http://192.0.2.1:8080"  # Use URL format for addresses with ports
+      address = "http://192.0.2.1:8080" # Use URL format for addresses with ports
       weight  = 100
     },
     {
@@ -32,7 +32,7 @@ resource "peakhour_origin_pool" "backend" {
   ]
 
   # shield_name = "sydney"  # Must be a valid shield location from /api/v1/shields
-  load_balancing_mode = "round_robin"  # Valid: none, round_robin, map, consistent
+  load_balancing_mode = "round_robin" # Valid: none, round_robin, map, consistent
 
   depends_on = [peakhour_reverse_proxy_service.example]
 }

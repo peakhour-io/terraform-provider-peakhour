@@ -16,7 +16,7 @@ Terraform provider for managing [Peakhour](https://www.peakhour.io) CDN and edge
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.22 (for development)
+- [Go](https://go.dev/doc/install) >= 1.26.7 (for development)
 
 ## Installation
 
@@ -35,7 +35,7 @@ terraform {
 
 provider "peakhour" {
   api_key = var.peakhour_api_key
-  # Optional: override API endpoint (defaults to https://console.peakhour.io)
+  # Optional: override API endpoint (defaults to https://www.peakhour.io)
   # base_url = "https://console.staging.peakhour.io"
 }
 ```

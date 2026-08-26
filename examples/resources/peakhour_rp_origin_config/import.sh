@@ -1,0 +1,1 @@
+terraform import peakhour_rp_origin_config.example example.com

@@ -1,10 +1,10 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: build install test testacc clean fmt vet lint onboard dist dist-clean dist-mirror \
+.PHONY: build install test testacc clean fmt vet lint generate onboard dist dist-clean dist-mirror \
         build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows build-all \
         beta-bundle
 
-VERSION ?= 0.1.0
+VERSION ?= 0.1.2
 DIST_DIR ?= dist
 RELEASE_PLATFORMS ?= linux_amd64 linux_arm64 darwin_amd64 darwin_arm64 windows_amd64
 BINARY_NAME = terraform-provider-peakhour
@@ -48,7 +48,7 @@ install: build
 	cp "$$SRC" "$$DEST/terraform-provider-peakhour_v$(VERSION)$${EXT}"
 
 test:
-	go test -v ./...
+	go test -count=1 -v ./...
 
 testacc:
 	TF_ACC=1 go test ./... -run '^TestAcc' -v -timeout 60m
@@ -67,6 +67,10 @@ clean:
 
 lint: fmt vet
 	go mod tidy
+
+generate:
+	terraform fmt -recursive examples/
+	cd tools && go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir .. --provider-name peakhour
 
 onboard:
 	go build -o peakhour-tf-onboard ./cmd/peakhour-tf-onboard

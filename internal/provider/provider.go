@@ -40,7 +40,7 @@ func (p *PeakhourProvider) Schema(ctx context.Context, req provider.SchemaReques
 				Sensitive:   true,
 			},
 			"base_url": schema.StringAttribute{
-				Description: "Peakhour API base URL. Defaults to https://console.peakhour.io. May also be provided via PEAKHOUR_BASE_URL environment variable.",
+				Description: "Peakhour API base URL. Defaults to https://www.peakhour.io. May also be provided via PEAKHOUR_BASE_URL environment variable.",
 				Optional:    true,
 			},
 		},

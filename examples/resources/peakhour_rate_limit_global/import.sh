@@ -1,0 +1,1 @@
+terraform import peakhour_rate_limit_global.example example.com

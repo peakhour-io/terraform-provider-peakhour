@@ -1,0 +1,1 @@
+terraform import peakhour_rp_ssl_certificate.example example.com

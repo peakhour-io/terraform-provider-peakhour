@@ -1,4 +1,4 @@
-# Distributing the Peakhour Terraform Provider (Private Binary → Public Registry)
+# Distributing the Peakhour Terraform Provider
 
 This repo’s provider address is:
 
@@ -11,12 +11,12 @@ This repo’s provider address is:
 From this repo:
 
 ```bash
-make dist-mirror VERSION=0.1.0
+make dist-mirror VERSION=0.1.2
 ```
 
 Outputs:
 
-- `dist/peakhour-provider_0.1.0.tar.gz` (filesystem mirror + checksums)
+- `dist/peakhour-provider_0.1.2.tar.xz` (filesystem mirror + checksums)
 - `dist/SHA256SUMS`
 
 ### Client install
@@ -25,7 +25,7 @@ Outputs:
 
 ```bash
 sudo mkdir -p /opt/peakhour/terraform-providers
-sudo tar -xzf peakhour-provider_0.1.0.tar.gz -C /opt/peakhour/terraform-providers
+sudo tar -xJf peakhour-provider_0.1.2.tar.xz -C /opt/peakhour/terraform-providers
 ```
 
 2. Create `~/.terraformrc` (or `/etc/terraformrc`) pointing Terraform at the mirror:
@@ -47,7 +47,7 @@ terraform {
   required_providers {
     peakhour = {
       source  = "peakhour-io/peakhour"
-      version = "0.1.0"
+      version = "0.1.2"
     }
   }
 }
@@ -72,10 +72,12 @@ Every API request includes:
 
 ## Phase 2: Publish to the Terraform Registry
 
-When you’re ready:
+Public Registry releases do not use the private mirror bundle. They are built
+and signed by [`.goreleaser.yml`](../.goreleaser.yml) from an approved semantic
+version tag. Complete the one-time account, signing-key, public-repository, and
+Registry enrollment steps in the
+[publication checklist](publication-checklist.md) before creating the first tag.
 
-1. Choose a semver tag (`vX.Y.Z`) and ensure builds embed that version (this repo uses `-ldflags "-X main.version=..."`).
-2. Produce release artifacts for each platform (the same set as `make dist-mirror`).
-3. Publish under `peakhour-io/peakhour`.
-4. Update client configs to remove the mirror override and let `terraform init` install from the registry.
-
+After the provider is published as `peakhour-io/peakhour`, clients remove the
+filesystem mirror override and run `terraform init` to install it from the
+Registry.

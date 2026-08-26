@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-1. Go 1.22+ installed
+1. Go 1.26.7+ installed
 2. Terraform 1.0+ installed
 3. Peakhour API key
 
@@ -18,14 +18,14 @@ make build
 ### 2. Install Locally for Testing
 
 ```bash
-make install VERSION=0.1.0
+make install VERSION=0.1.2
 ```
 
 Or manually:
 
 ```bash
-mkdir -p ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.0/linux_amd64
-cp terraform-provider-peakhour ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.0/linux_amd64/terraform-provider-peakhour_v0.1.0
+mkdir -p ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.2/linux_amd64
+cp terraform-provider-peakhour ~/.terraform.d/plugins/registry.terraform.io/peakhour-io/peakhour/0.1.2/linux_amd64/terraform-provider-peakhour_v0.1.2
 ```
 
 ### 3. Configure Local Development

@@ -6,10 +6,10 @@ pipeline {
   }
 
   parameters {
-    string(name: 'GO_VERSION', defaultValue: '1.22.10', description: 'Go toolchain version for builds/tests.')
+    string(name: 'GO_VERSION', defaultValue: '1.26.7', description: 'Go toolchain version for builds/tests.')
     booleanParam(name: 'RUN_ACCEPTANCE', defaultValue: false, description: 'Run Terraform acceptance tests (requires Peakhour credentials).')
     string(name: 'PEAKHOUR_TEST_DOMAIN', defaultValue: '', description: 'Existing Peakhour domain to use for acceptance tests.')
-    string(name: 'PEAKHOUR_BASE_URL', defaultValue: '', description: 'Optional Peakhour API base URL (defaults to console.peakhour.io).')
+    string(name: 'PEAKHOUR_BASE_URL', defaultValue: '', description: 'Optional Peakhour API base URL (defaults to www.peakhour.io).')
     string(name: 'TERRAFORM_VERSION', defaultValue: '1.14.2', description: 'Terraform CLI version for acceptance tests.')
   }
 

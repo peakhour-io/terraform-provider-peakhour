@@ -1,0 +1,45 @@
+name: Bug report
+description: Report unexpected provider behavior without sharing sensitive data
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include API keys, Terraform state, customer domains, or other sensitive data.
+        Report suspected vulnerabilities privately according to SECURITY.md.
+  - type: input
+    id: provider-version
+    attributes:
+      label: Provider version
+      placeholder: 0.1.2
+    validations:
+      required: true
+  - type: input
+    id: terraform-version
+    attributes:
+      label: Terraform version
+      placeholder: 1.14.0
+    validations:
+      required: true
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Minimal configuration
+      description: Redact credentials and identifying customer data.
+      render: terraform
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Redact credentials, authorization headers, state, and customer data.
+      render: text

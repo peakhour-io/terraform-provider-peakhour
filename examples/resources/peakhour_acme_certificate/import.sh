@@ -1,0 +1,1 @@
+terraform import peakhour_acme_certificate.example example.com

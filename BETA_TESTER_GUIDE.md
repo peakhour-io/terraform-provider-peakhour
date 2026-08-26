@@ -39,7 +39,7 @@ provider_installation {
 # Required - Your Peakhour API key
 export PEAKHOUR_API_KEY="your-api-key-here"
 
-# Optional - Override API endpoint (defaults to https://console.peakhour.io)
+# Optional - Override API endpoint (defaults to https://www.peakhour.io)
 # export PEAKHOUR_BASE_URL="https://console.staging.peakhour.io"
 ```
 
@@ -114,7 +114,7 @@ You'll see a warning about dev_overrides - this is expected and can be ignored.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `PEAKHOUR_API_KEY` | Yes | Your Peakhour API key |
-| `PEAKHOUR_BASE_URL` | No | API endpoint (default: `https://console.peakhour.io`) |
+| `PEAKHOUR_BASE_URL` | No | API endpoint (default: `https://www.peakhour.io`) |
 
 ## Available Resources
 
@@ -125,16 +125,20 @@ You'll see a warning about dev_overrides - this is expected and can be ignored.
 | `peakhour_reverse_proxy_service` | Enable CDN/reverse proxy |
 | `peakhour_reverse_proxy_config` | Configure compression, WebSockets, aliases |
 | `peakhour_origin_pool` | Origin servers with load balancing |
-| `peakhour_tls_acme` | TLS/ACME certificate management |
+| `peakhour_acme_settings` | ACME domain-name settings |
+| `peakhour_acme_certificate` | ACME certificate issuance |
 | `peakhour_rule` | Firewall, caching, headers, rate limiting rules |
 | `peakhour_rate_limit_zone` | Rate limiting zones |
 | `peakhour_rule_list` | IP/string/integer lists for rules |
-| `peakhour_bulk_redirect` | Redirect lists |
+| `peakhour_bulk_redirect_list` | Redirect lists |
+| `peakhour_bulk_redirect_entry` | Redirect entries |
 | `peakhour_rp_waf_options` | WAF settings |
 | `peakhour_rp_waf_custom_rule` | Custom WAF rules |
 | `peakhour_transform_settings` | HTML/image transform settings |
 | `peakhour_image_transform` | Image optimization rules |
-| `peakhour_cdn_purge` | CDN cache purge |
+| `peakhour_rp_cdn_purge_resources` | Purge individual cached resources |
+| `peakhour_rp_cdn_purge_wildcard` | Purge cached wildcard paths |
+| `peakhour_rp_cdn_purge_tags` | Purge cached tags |
 
 ## Troubleshooting
 
@@ -158,4 +162,4 @@ If you don't see this, check your `~/.terraformrc` syntax.
 
 ---
 
-**Provider Version:** 0.1.0 (Beta)
+**Provider Version:** 0.1.2 (Beta)

@@ -43,7 +43,7 @@ import {
 
 # Import existing image transforms (replace <uuid> with actual UUIDs)
 # You can find UUIDs via: curl -H "Authorization: Bearer $PEAKHOUR_API_KEY" \
-#   https://console.peakhour.io/api/v1/domains/images.example.com/image-transforms
+#   https://www.peakhour.io/api/v1/domains/images.example.com/image-transforms
 #
 import {
   to = peakhour_image_transform.thumbnail

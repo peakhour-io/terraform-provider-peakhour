@@ -41,8 +41,8 @@ resource "peakhour_rule_list" "ip_allowlist" {
   type   = "ip"
 
   ips = [
-    "203.0.113.0/24",  # Office network
-    "198.51.100.10",   # VPN endpoint
+    "203.0.113.0/24", # Office network
+    "198.51.100.10",  # VPN endpoint
   ]
 
   depends_on = [peakhour_reverse_proxy_service.example]

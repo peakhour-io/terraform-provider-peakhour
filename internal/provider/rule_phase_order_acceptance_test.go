@@ -98,4 +98,3 @@ resource "peakhour_rule_phase_order" "test" {
 }
 `, testAccConfigHeader(), domain, nameA, filterA, domain, nameB, filterB, domain, orderExpr)
 }
-

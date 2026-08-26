@@ -33,7 +33,7 @@ resource "peakhour_rate_limit_zone" "api_zone" {
   name   = "api_limit"
 
   # Allow 100 requests per 60 seconds
-  requests_max         = 100
+  requests_max          = 100
   requests_interval_sec = 60
 
   # Block for 300 seconds when limit exceeded
@@ -48,14 +48,14 @@ resource "peakhour_rate_limit_zone" "login_zone" {
   name   = "login_limit"
 
   # Allow only 5 login attempts per 300 seconds
-  requests_max         = 5
+  requests_max          = 5
   requests_interval_sec = 300
 
   # Block for 1 hour when limit exceeded
   block_duration_sec = 3600
 
   # Also limit concurrent connections
-  connections_max         = 2
+  connections_max          = 2
   connections_interval_sec = 60
 
   depends_on = [peakhour_reverse_proxy_service.example]
@@ -67,7 +67,7 @@ resource "peakhour_rate_limit_zone" "error_monitor" {
   name   = "error_tracking"
 
   # Track 50x errors
-  response_errors_max         = 100
+  response_errors_max          = 100
   response_errors_interval_sec = 300
 
   block_duration_sec = 600
@@ -95,11 +95,11 @@ resource "peakhour_rule" "api_ratelimit" {
 
   actions_json = jsonencode({
     rate_limit_request = [{
-      type                            = "rate_limit_request"
-      check_zone                      = "api_limit"
-      check_zone_action               = "block"
-      check_zone_action_status_code   = 429
-      zone_key                        = ["ip"]
+      type                          = "rate_limit_request"
+      check_zone                    = "api_limit"
+      check_zone_action             = "block"
+      check_zone_action_status_code = 429
+      zone_key                      = ["ip"]
     }]
   })
 
@@ -119,12 +119,12 @@ resource "peakhour_rule" "login_ratelimit" {
 
   actions_json = jsonencode({
     rate_limit_request = [{
-      type                            = "rate_limit_request"
-      check_zone                      = "login_limit"
-      check_zone_action               = "block"
-      check_zone_action_status_code   = 429
-      zone_key                        = ["ip", "header"]
-      zone_key_headers                = ["X-User-Email"]
+      type                          = "rate_limit_request"
+      check_zone                    = "login_limit"
+      check_zone_action             = "block"
+      check_zone_action_status_code = 429
+      zone_key                      = ["ip", "header"]
+      zone_key_headers              = ["X-User-Email"]
     }]
   })
 
@@ -144,11 +144,11 @@ resource "peakhour_rule" "api_key_limit" {
 
   actions_json = jsonencode({
     rate_limit_request = [{
-      type                            = "rate_limit_request"
-      check_zone                      = "api_limit"
-      check_zone_action               = "challenge"
-      zone_key                        = ["header"]
-      zone_key_headers                = ["X-API-Key"]
+      type              = "rate_limit_request"
+      check_zone        = "api_limit"
+      check_zone_action = "challenge"
+      zone_key          = ["header"]
+      zone_key_headers  = ["X-API-Key"]
     }]
   })
 

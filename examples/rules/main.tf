@@ -37,7 +37,7 @@ resource "peakhour_origin_pool" "api_backend" {
 
   address = [
     {
-      address = "http://192.0.2.10:8080"  # Use URL format: http://host:port or https://host:port
+      address = "http://192.0.2.10:8080" # Use URL format: http://host:port or https://host:port
       weight  = 100
     }
   ]
@@ -90,11 +90,11 @@ resource "peakhour_rule" "ratelimit_api" {
 
   actions_json = jsonencode({
     rate_limit_request = [{
-      type                            = "rate_limit_request"
-      check_zone                      = peakhour_rate_limit_zone.api_zone.name
-      check_zone_action               = "block"
-      check_zone_action_status_code   = 429
-      zone_key                        = ["ip"]
+      type                          = "rate_limit_request"
+      check_zone                    = peakhour_rate_limit_zone.api_zone.name
+      check_zone_action             = "block"
+      check_zone_action_status_code = 429
+      zone_key                      = ["ip"]
     }]
   })
 
@@ -111,11 +111,11 @@ resource "peakhour_rule" "ratelimit_api_late" {
 
   actions_json = jsonencode({
     rate_limit_request_late = [{
-      type                            = "rate_limit_request_late"
-      check_zone                      = peakhour_rate_limit_zone.api_zone.name
-      check_zone_action               = "block"
-      check_zone_action_status_code   = 429
-      zone_key                        = ["ip"]
+      type                          = "rate_limit_request_late"
+      check_zone                    = peakhour_rate_limit_zone.api_zone.name
+      check_zone_action             = "block"
+      check_zone_action_status_code = 429
+      zone_key                      = ["ip"]
     }]
   })
 

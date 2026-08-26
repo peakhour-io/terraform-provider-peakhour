@@ -1,0 +1,1 @@
+terraform import peakhour_rp_threat_access_list_rule.example example.com/access_list/11111111-1111-1111-1111-111111111111
