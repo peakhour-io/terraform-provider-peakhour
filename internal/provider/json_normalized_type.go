@@ -95,43 +95,43 @@ func (v JSONNormalizedValue) Type(ctx context.Context) attr.Type {
 }
 
 // StringSemanticEquals implements subset equality for JSON.
-// The "prior" value (v) is compared against the "new" value (newValuable).
-// In Terraform's flow during Read:
-//   - v = prior state (user's config from last apply)
-//   - newValuable = new value from API
+// Terraform Plugin Framework invokes this method on the proposed new value and
+// passes the prior value as the argument. During Read:
+//   - v = proposed new value from the API
+//   - priorValuable = prior state derived from the user's configuration
 //
-// We return true if all fields in the prior value exist in the new value
-// with the same values (the new value may have additional fields).
-func (v JSONNormalizedValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+// We return true if all fields in the prior value exist in the proposed new
+// value with the same values (the API value may have additional defaults).
+func (v JSONNormalizedValue) StringSemanticEquals(ctx context.Context, priorValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if v.IsNull() || v.IsUnknown() {
 		return false, diags
 	}
 
-	newValue, ok := newValuable.(JSONNormalizedValue)
+	priorValue, ok := priorValuable.(JSONNormalizedValue)
 	if !ok {
 		return false, diags
 	}
 
-	if newValue.IsNull() || newValue.IsUnknown() {
+	if priorValue.IsNull() || priorValue.IsUnknown() {
 		return false, diags
 	}
 
 	// Parse both JSON values
-	var priorJSON, newJSON any
-	if err := json.Unmarshal([]byte(v.ValueString()), &priorJSON); err != nil {
+	var newJSON, priorJSON any
+	if err := json.Unmarshal([]byte(v.ValueString()), &newJSON); err != nil {
 		diags.AddWarning(
-			"Invalid JSON in prior state",
-			fmt.Sprintf("Could not parse prior JSON value: %s", err),
+			"Invalid JSON in proposed state",
+			fmt.Sprintf("Could not parse proposed JSON value: %s", err),
 		)
 		return false, diags
 	}
 
-	if err := json.Unmarshal([]byte(newValue.ValueString()), &newJSON); err != nil {
+	if err := json.Unmarshal([]byte(priorValue.ValueString()), &priorJSON); err != nil {
 		diags.AddWarning(
-			"Invalid JSON in new value",
-			fmt.Sprintf("Could not parse new JSON value: %s", err),
+			"Invalid JSON in prior state",
+			fmt.Sprintf("Could not parse prior JSON value: %s", err),
 		)
 		return false, diags
 	}
