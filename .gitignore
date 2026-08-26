@@ -4,6 +4,7 @@
 *.dylib
 *.test
 *.out
+*.swp
 go.work
 go.work.sum
 
@@ -24,3 +25,8 @@ terraform.rc
 dist/
 terraform-provider-peakhour
 .toolchains
+.codex
+.claude
+/peakhour-terraform-beta-*
+/peakhour-tf-onboard_*
+/terraform-provider-peakhour_*
