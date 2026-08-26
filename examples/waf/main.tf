@@ -82,14 +82,15 @@ resource "peakhour_rp_waf_custom_rule_order" "example" {
   order             = [peakhour_rp_waf_custom_rule.example.uuid]
 }
 
-# Disable a WAF rule group
-# Note: file_name must match an existing rule group in the database
-resource "peakhour_rp_waf_rule_group" "example" {
-  domain = peakhour_domain.example.name
-
-  ruleset   = "peakhour"
-  file_name = "peakhour-waf-rules" # Must be a valid file_name from the ruleset
-  enabled   = false
-
-  depends_on = [peakhour_reverse_proxy_service.example]
-}
+# Disable a WAF rule group. Uncomment only after replacing file_name with a
+# group returned for the selected ruleset; the placeholder is not universally
+# available and must not make the runnable example fail.
+# resource "peakhour_rp_waf_rule_group" "example" {
+#   domain = peakhour_domain.example.name
+#
+#   ruleset   = "peakhour"
+#   file_name = "replace-with-an-existing-rule-group"
+#   enabled   = false
+#
+#   depends_on = [peakhour_reverse_proxy_service.example]
+# }
