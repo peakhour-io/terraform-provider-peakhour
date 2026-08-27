@@ -81,6 +81,9 @@ func TestGoReleaserProducesRegistryArtifacts(t *testing.T) {
 		"{{ .ProjectName }}_{{ .Version }}_SHA256SUMS",
 		"artifacts: checksum",
 		"--detach-sign",
+		"draft: true",
+		"owner: peakhour-io",
+		"name: terraform-provider-peakhour",
 		"- '6'",
 	)
 
@@ -91,27 +94,35 @@ func TestGoReleaserProducesRegistryArtifacts(t *testing.T) {
 	}
 }
 
-func TestReleaseWorkflowUsesSignedTagRelease(t *testing.T) {
-	workflow := readRepositoryFile(t, ".github/workflows/release.yml")
-	requireContains(t, workflow,
-		"tags:",
-		"- 'v*'",
-		"contents: write",
-		"environment: release",
+func TestLocalReleaseUsesSignedTagRelease(t *testing.T) {
+	releaseScript := readRepositoryFile(t, "scripts/release-local.sh")
+	requireContains(t, releaseScript,
+		"prerelease_identifier=",
+		"semver_pattern=",
+		"GITHUB_TOKEN",
+		"GH_TOKEN",
+		"GPG_FINGERPRINT",
+		"git status --porcelain",
+		"refs/heads/$release_tag",
+		"refs/tags/$release_tag",
+		`git ls-remote "$github_remote" "refs/heads/$release_tag"`,
 		"go test -count=1 ./...",
 		"go vet ./...",
-		"govulncheck ./...",
+		"golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...",
 		"zricethezav/gitleaks/v8@v8.30.1 git",
 		"make generate",
 		"git diff --exit-code",
-		"args: check",
-		"GPG_PRIVATE_KEY",
-		"PASSPHRASE",
-		"GPG_FINGERPRINT",
-		"release --clean",
+		"goreleaser check",
+		"goreleaser release --clean",
 		"REQUIRE_SIGNATURE=1 scripts/verify-release-assets.sh",
+		`gh release edit "$release_tag"`,
+		"--draft=false",
 		"scripts/validate-registry-examples.sh",
 	)
+
+	if _, err := os.Stat(filepath.Join(repositoryRoot(t), ".github/workflows/release.yml")); !os.IsNotExist(err) {
+		t.Errorf(".github/workflows/release.yml must be absent for local-only releases; stat error = %v", err)
+	}
 }
 
 func TestContinuousIntegrationChecksTestsGenerationAndReleaseConfig(t *testing.T) {

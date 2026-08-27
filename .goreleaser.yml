@@ -53,7 +53,10 @@ signs:
       - '${artifact}'
 
 release:
-  draft: false
+  github:
+    owner: peakhour-io
+    name: terraform-provider-peakhour
+  draft: true
   extra_files:
     - glob: terraform-registry-manifest.json
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
