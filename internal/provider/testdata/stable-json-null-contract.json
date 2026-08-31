@@ -1,0 +1,68 @@
+{
+  "format_version": 1,
+  "verified_stable_commit": "5034ecfe509fd524ce7c551e98549f973f2ed1a6",
+  "vectors": [
+    {
+      "name": "rule firewall reason null converges with omission",
+      "attribute": "peakhour_rule.actions_json",
+      "policy": "exact_null_object_keys",
+      "configured": {"firewall":[{"type":"firewall","action":"allow","reason":null}]},
+      "api": {"firewall":[{"type":"firewall","action":"allow"}]},
+      "equal": true
+    },
+    {
+      "name": "rule firewall non-null reason remains drift",
+      "attribute": "peakhour_rule.actions_json",
+      "policy": "exact_null_object_keys",
+      "configured": {"firewall":[{"type":"firewall","action":"allow","reason":"openai"}]},
+      "api": {"firewall":[{"type":"firewall","action":"allow"}]},
+      "equal": false
+    },
+    {
+      "name": "custom rule quote type null converges with omission",
+      "attribute": "peakhour_rp_waf_custom_rule.rules_json",
+      "policy": "subset_null_object_keys",
+      "configured": [{"variable":"ARGS","variable_quote_type":null,"operator":"@contains","operator_arg":"bad"}],
+      "api": [{"variable":"ARGS","operator":"@contains","operator_arg":"bad","variable_part":"","variable_negated":false}],
+      "equal": true
+    },
+    {
+      "name": "custom rule logging nulls converge with omission",
+      "attribute": "peakhour_rp_waf_custom_rule.logging_json",
+      "policy": "subset_null_object_keys",
+      "configured": {"message":"blocked","severity":null,"tags":null},
+      "api": {"message":"blocked"},
+      "equal": true
+    },
+    {
+      "name": "custom rule logging non-null severity remains drift",
+      "attribute": "peakhour_rp_waf_custom_rule.logging_json",
+      "policy": "subset_null_object_keys",
+      "configured": {"message":"blocked","severity":"ERROR"},
+      "api": {"message":"blocked"},
+      "equal": false
+    }
+  ],
+  "excluded_attributes": [
+    {
+      "attribute": "peakhour_rp_waf_custom_rule.action_json",
+      "reason": "action_arg_val_param_val defaults to an empty string when omitted but preserves explicit null"
+    },
+    {
+      "attribute": "peakhour_rp_waf_owasp_settings.settings_json",
+      "reason": "the provider null-clearing contract conflicts with the current stable API implementation"
+    },
+    {
+      "attribute": "peakhour_image_transform.config_json",
+      "reason": "the stable API preserves explicit null fields and omission can delete them"
+    },
+    {
+      "attribute": "peakhour_rp_waf_options.excluded_rules_json",
+      "reason": "computed-only response data includes required nullable fields"
+    },
+    {
+      "attribute": "peakhour_rp_waf_options.excluded_files_json",
+      "reason": "computed-only response data has no configured-value normalization problem"
+    }
+  ]
+}

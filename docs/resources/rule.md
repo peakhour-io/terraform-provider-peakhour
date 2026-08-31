@@ -34,7 +34,7 @@ resource "peakhour_rule" "example" {
 
 ### Required
 
-- `actions_json` (String) Actions as JSON string. Structure: map[action_type][]action. Example: '{"firewall":[{"type":"firewall","action":"deny"}]}'
+- `actions_json` (String) Actions as JSON string. Structure: map[action_type][]action. Null-valued object properties are equivalent to omission for drift detection; null array elements remain significant. Example: '{"firewall":[{"type":"firewall","action":"deny"}]}'
 - `domain` (String) Domain name.
 - `filter_str` (String) Filter expression (Wirefilter syntax, e.g., 'http.request.uri.path matches "^/api/"').
 - `name` (String) Rule name.

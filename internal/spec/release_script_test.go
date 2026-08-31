@@ -92,6 +92,10 @@ printf 'validate|github_token=%s\n' "${GITHUB_TOKEN:+set}" >>"$RELEASE_TEST_LOG"
 	writeExecutable(t, filepath.Join(root, "scripts", "verify-release-assets.sh"), `#!/usr/bin/env bash
 printf 'verify|required=%s|github_token=%s\n' "${REQUIRE_SIGNATURE:-0}" "${GITHUB_TOKEN:+set}" >>"$RELEASE_TEST_LOG"
 `)
+	writeExecutable(t, filepath.Join(root, "scripts", "verify-stable-json-contract.py"), `#!/usr/bin/env bash
+printf 'stable-contract %s|github_token=%s\n' "$*" "${GITHUB_TOKEN:+set}" >>"$RELEASE_TEST_LOG"
+[[ "${MOCK_CONTRACT_FAILURE:-0}" != 1 ]]
+`)
 
 	environment := append(os.Environ(),
 		"PATH="+binDir+":/usr/bin:/bin",
@@ -169,7 +173,7 @@ func TestLocalReleaseRequiresTokenAndFailsBeforePublishing(t *testing.T) {
 		t.Fatalf("missing token reached release command:\n%s", log)
 	}
 
-	for _, override := range []string{"MOCK_SIGN_FAILURE=1", "MOCK_TEST_FAILURE=1"} {
+	for _, override := range []string{"MOCK_SIGN_FAILURE=1", "MOCK_TEST_FAILURE=1", "MOCK_CONTRACT_FAILURE=1"} {
 		output, log, err = runReleaseFixture(t, override)
 		if err == nil {
 			t.Fatalf("%s did not stop release: output=%s", override, output)

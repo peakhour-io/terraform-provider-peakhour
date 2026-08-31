@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -90,7 +91,7 @@ func TestNormalizeJSON(t *testing.T) {
 	}
 }
 
-func TestNormalizeJSONDropNullObjectKeys(t *testing.T) {
+func TestDecodeJSONDropNullObjectKeys(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
@@ -116,6 +117,12 @@ func TestNormalizeJSONDropNullObjectKeys(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "preserves large number precision",
+			input:    `{"value":9007199254740993,"ignored":null}`,
+			expected: `{"value":9007199254740993}`,
+			wantErr:  false,
+		},
+		{
 			name:     "invalid json",
 			input:    `{invalid`,
 			expected: "",
@@ -125,13 +132,21 @@ func TestNormalizeJSONDropNullObjectKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := normalizeJSONDropNullObjectKeys(tt.input)
+			gotValue, err := decodeJSONDropNullObjectKeys(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("normalizeJSONDropNullObjectKeys() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("decodeJSONDropNullObjectKeys() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if tt.wantErr {
+				return
+			}
+			gotJSON, err := json.Marshal(gotValue)
+			if err != nil {
+				t.Fatalf("marshal canonical JSON: %v", err)
+			}
+			got := string(gotJSON)
 			if got != tt.expected {
-				t.Errorf("normalizeJSONDropNullObjectKeys() = %v, want %v", got, tt.expected)
+				t.Errorf("decodeJSONDropNullObjectKeys() = %v, want %v", got, tt.expected)
 			}
 		})
 	}

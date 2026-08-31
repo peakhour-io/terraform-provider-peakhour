@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -102,6 +103,7 @@ func TestLocalReleaseUsesSignedTagRelease(t *testing.T) {
 		"GITHUB_TOKEN",
 		"GH_TOKEN",
 		"GPG_FINGERPRINT",
+		"python3",
 		"git status --porcelain",
 		"refs/heads/$release_tag",
 		"refs/tags/$release_tag",
@@ -118,10 +120,41 @@ func TestLocalReleaseUsesSignedTagRelease(t *testing.T) {
 		`gh release edit "$release_tag"`,
 		"--draft=false",
 		"scripts/validate-registry-examples.sh",
+		"scripts/verify-stable-json-contract.py",
 	)
 
 	if _, err := os.Stat(filepath.Join(repositoryRoot(t), ".github/workflows/release.yml")); !os.IsNotExist(err) {
 		t.Errorf(".github/workflows/release.yml must be absent for local-only releases; stat error = %v", err)
+	}
+}
+
+func TestStableAPIContractIsPartOfLocalReleaseValidation(t *testing.T) {
+	makefile := readRepositoryFile(t, "Makefile")
+	releaseScript := readRepositoryFile(t, "scripts/release-local.sh")
+	contributing := readRepositoryFile(t, "CONTRIBUTING.md")
+
+	requireContains(t, makefile,
+		"test-stable-contract:",
+		"scripts/verify-stable-json-contract.py",
+	)
+	requireContains(t, releaseScript, "scripts/verify-stable-json-contract.py")
+	requireContains(t, contributing,
+		"make test-stable-contract",
+		"PEAKHOUR_WEBSITE_STABLE_PATH",
+	)
+
+	contractScript := filepath.Join(repositoryRoot(t), "scripts", "verify-stable-json-contract.py")
+	info, err := os.Stat(contractScript)
+	if err != nil {
+		t.Fatalf("stat stable contract script: %v", err)
+	}
+	if info.Mode()&0o111 == 0 {
+		t.Error("stable contract script must be executable")
+	}
+
+	command := exec.Command("python3", contractScript, "--self-test")
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("stable contract verifier self-test: %v\n%s", err, output)
 	}
 }
 

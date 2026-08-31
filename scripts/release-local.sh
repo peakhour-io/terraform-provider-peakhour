@@ -22,7 +22,7 @@ if [[ -z "$github_token" ]]; then
 fi
 unset GITHUB_TOKEN GH_TOKEN
 
-for command_name in git go terraform goreleaser gpg gh; do
+for command_name in git go terraform goreleaser gpg gh python3; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "required command is unavailable: $command_name" >&2
     exit 1
@@ -115,6 +115,7 @@ fi
 go mod download
 go test -count=1 ./...
 go vet ./...
+scripts/verify-stable-json-contract.py "${PEAKHOUR_WEBSITE_STABLE_PATH:-../peakhour-website-stable}"
 go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
 go run github.com/zricethezav/gitleaks/v8@v8.30.1 git . --redact --no-banner
 make generate

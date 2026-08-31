@@ -41,27 +41,6 @@ func normalizeJSON(input string) (string, error) {
 	return string(output), nil
 }
 
-// normalizeJSONDropNullObjectKeys removes object keys with null values, and
-// normalizes the JSON output to a stable representation.
-//
-// This is primarily intended for API responses that eagerly include many
-// optional fields as explicit nulls. Terraform configs often omit those keys
-// entirely, which causes perpetual diffs if we store the raw API JSON in state.
-func normalizeJSONDropNullObjectKeys(input string) (string, error) {
-	var v any
-	if err := json.Unmarshal([]byte(input), &v); err != nil {
-		return "", err
-	}
-
-	v = dropNullObjectKeys(v)
-
-	output, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
-
 func dropNullObjectKeys(v any) any {
 	switch t := v.(type) {
 	case map[string]any:

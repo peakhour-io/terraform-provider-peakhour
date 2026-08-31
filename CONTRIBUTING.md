@@ -21,6 +21,20 @@ scripts/validate-registry-examples.sh
 git diff --exit-code
 ```
 
+When changing JSON normalization or preparing a local release, verify the
+provider's checked-in contract vectors against the reviewed stable API source:
+
+```shell
+make test-stable-contract
+```
+
+The target uses `../peakhour-website-stable` by default. Set
+`PEAKHOUR_WEBSITE_STABLE_PATH` when the stable API checkout is elsewhere. This
+check intentionally runs during the maintainer's local release workflow rather
+than public CI, which does not have access to the sibling repository. It checks
+the pinned Python source contract and provider lifecycle fixtures; it does not
+replace a live stable-API endpoint test.
+
 `make generate` formats the Terraform examples and regenerates the public
 Registry documentation. Commit every generated documentation change with the
 schema change that caused it.

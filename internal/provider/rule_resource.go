@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -29,14 +28,14 @@ type RuleResource struct {
 }
 
 type RuleResourceModel struct {
-	ID          types.String         `tfsdk:"id"`
-	Domain      types.String         `tfsdk:"domain"`
-	UUID        types.String         `tfsdk:"uuid"`
-	Phase       types.String         `tfsdk:"phase"`
-	Name        types.String         `tfsdk:"name"`
-	FilterStr   types.String         `tfsdk:"filter_str"`
-	Enabled     types.Bool           `tfsdk:"enabled"`
-	ActionsJSON jsontypes.Normalized `tfsdk:"actions_json"`
+	ID          types.String            `tfsdk:"id"`
+	Domain      types.String            `tfsdk:"domain"`
+	UUID        types.String            `tfsdk:"uuid"`
+	Phase       types.String            `tfsdk:"phase"`
+	Name        types.String            `tfsdk:"name"`
+	FilterStr   types.String            `tfsdk:"filter_str"`
+	Enabled     types.Bool              `tfsdk:"enabled"`
+	ActionsJSON JSONNullEquivalentValue `tfsdk:"actions_json"`
 }
 
 func (r *RuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -90,9 +89,9 @@ func (r *RuleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Default:     booldefault.StaticBool(true),
 			},
 			"actions_json": schema.StringAttribute{
-				Description: "Actions as JSON string. Structure: map[action_type][]action. Example: '{\"firewall\":[{\"type\":\"firewall\",\"action\":\"deny\"}]}'",
+				Description: "Actions as JSON string. Structure: map[action_type][]action. Null-valued object properties are equivalent to omission for drift detection; null array elements remain significant. Example: '{\"firewall\":[{\"type\":\"firewall\",\"action\":\"deny\"}]}'",
 				Required:    true,
-				CustomType:  jsontypes.NormalizedType{},
+				CustomType:  JSONNullEquivalentType{},
 			},
 		},
 	}
@@ -139,7 +138,7 @@ func (r *RuleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
 		return
 	}
-	plan.ActionsJSON = jsontypes.NewNormalizedValue(normalizedJSON)
+	plan.ActionsJSON = NewJSONNullEquivalentValue(normalizedJSON)
 
 	// Create rule
 	ruleAdd := client.RulePhaseAdd{
@@ -215,15 +214,7 @@ func (r *RuleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 		return
 	}
-	normalizedActionsJSON, err := normalizeJSONDropNullObjectKeys(string(actionsJSON))
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error normalizing actions",
-			"Could not normalize actions JSON: "+err.Error(),
-		)
-		return
-	}
-	state.ActionsJSON = jsontypes.NewNormalizedValue(normalizedActionsJSON)
+	state.ActionsJSON = NewJSONNullEquivalentValue(string(actionsJSON))
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -253,7 +244,7 @@ func (r *RuleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		resp.Diagnostics.AddError("Error normalizing actions JSON", err.Error())
 		return
 	}
-	plan.ActionsJSON = jsontypes.NewNormalizedValue(normalizedJSON)
+	plan.ActionsJSON = NewJSONNullEquivalentValue(normalizedJSON)
 
 	// Build update
 	name := plan.Name.ValueString()

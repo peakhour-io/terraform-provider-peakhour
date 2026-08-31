@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: build install test testacc clean fmt vet lint generate onboard dist dist-clean dist-mirror \
+.PHONY: build install test testacc test-stable-contract clean fmt vet lint generate onboard dist dist-clean dist-mirror \
         build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-windows build-all \
         beta-bundle
 
@@ -52,6 +52,9 @@ test:
 
 testacc:
 	TF_ACC=1 go test ./... -run '^TestAcc' -v -timeout 60m
+
+test-stable-contract:
+	scripts/verify-stable-json-contract.py "$${PEAKHOUR_WEBSITE_STABLE_PATH:-../peakhour-website-stable}"
 
 fmt:
 	go fmt ./...

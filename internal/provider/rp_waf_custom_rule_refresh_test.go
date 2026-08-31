@@ -5,12 +5,73 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+func TestAccRPWAFCustomRule_NullAndMissingPropertiesAreStable(t *testing.T) {
+	const ruleUUID = "11111111-1111-1111-1111-111111111111"
+	var mutex sync.Mutex
+	var createBody map[string]any
+
+	response := testWAFCustomRuleResponse(ruleUUID, true)
+	rules := response["rules"].([]any)
+	delete(rules[0].(map[string]any), "variable_quote_type")
+	response["logging"] = map[string]any{"message": "blocked"}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule":
+			mutex.Lock()
+			defer mutex.Unlock()
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Errorf("decode create request: %v", err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(response)
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule":
+			_ = json.NewEncoder(w).Encode([]any{response})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/domains/example.com/services/rp/waf/customrule/"+ruleUUID:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, "unexpected request "+r.Method+" "+r.URL.Path, http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	configureMockAcceptanceTest(t, server.URL)
+	config := testUnitWAFCustomRuleNullConfig()
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: config},
+			{Config: config, PlanOnly: true},
+		},
+	})
+
+	mutex.Lock()
+	defer mutex.Unlock()
+	if createBody == nil {
+		t.Fatal("create request was not captured")
+	}
+	rule := createBody["rules"].([]any)[0].(map[string]any)
+	if value, exists := rule["variable_quote_type"]; !exists || value != nil {
+		t.Fatalf("configured null variable_quote_type was not preserved: %#v", rule)
+	}
+	logging := createBody["logging"].(map[string]any)
+	for _, key := range []string{"severity", "tags"} {
+		if value, exists := logging[key]; !exists || value != nil {
+			t.Fatalf("configured null %s was not preserved: %#v", key, logging)
+		}
+	}
+}
 
 func TestAccRPWAFCustomRule_ReconcilesEnabledWithToggleEndpoint(t *testing.T) {
 	var reads atomic.Int32
@@ -128,4 +189,30 @@ resource "peakhour_rp_waf_custom_rule" "test" {
   logging_json = jsonencode({ message = "blocked", severity = "INFO", tags = [] })
 }
 `, enabled)
+}
+
+func testUnitWAFCustomRuleNullConfig() string {
+	return `
+terraform {
+  required_providers {
+    peakhour = { source = "peakhour-io/peakhour" }
+  }
+}
+provider "peakhour" {}
+resource "peakhour_rp_waf_custom_rule" "test" {
+  domain = "example.com"
+  rules_json = jsonencode([{
+    variable            = "ARGS"
+    variable_quote_type = null
+    operator            = "@contains"
+    operator_arg        = "bad"
+  }])
+  action_json = jsonencode({ action_name = "deny" })
+  logging_json = jsonencode({
+    message  = "blocked"
+    severity = null
+    tags     = null
+  })
+}
+`
 }

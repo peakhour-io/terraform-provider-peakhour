@@ -39,9 +39,9 @@ type RPWAFCustomRuleResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 
-	RulesJSON   JSONNormalizedValue `tfsdk:"rules_json"`
-	ActionJSON  JSONNormalizedValue `tfsdk:"action_json"`
-	LoggingJSON JSONNormalizedValue `tfsdk:"logging_json"`
+	RulesJSON   JSONSubsetNullEquivalentValue `tfsdk:"rules_json"`
+	ActionJSON  JSONNormalizedValue           `tfsdk:"action_json"`
+	LoggingJSON JSONSubsetNullEquivalentValue `tfsdk:"logging_json"`
 }
 
 func (r *RPWAFCustomRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -102,9 +102,9 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"rules_json": schema.StringAttribute{
-				Description: "Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults are ignored for drift detection.",
+				Description: "Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.",
 				Required:    true,
-				CustomType:  JSONNormalizedType{},
+				CustomType:  JSONSubsetNullEquivalentType{},
 			},
 			"action_json": schema.StringAttribute{
 				Description: "Action as JSON object (WafAction). Server-side defaults are ignored for drift detection.",
@@ -112,9 +112,9 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 				CustomType:  JSONNormalizedType{},
 			},
 			"logging_json": schema.StringAttribute{
-				Description: "Logging as JSON object (WafLogging). Server-side defaults are ignored for drift detection.",
+				Description: "Logging as JSON object (WafLogging). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.",
 				Required:    true,
-				CustomType:  JSONNormalizedType{},
+				CustomType:  JSONSubsetNullEquivalentType{},
 			},
 		},
 	}
@@ -291,7 +291,7 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 		diags.AddError("Error marshalling rules", err.Error())
 		return nil
 	}
-	model.RulesJSON = NewJSONNormalizedValue(string(rulesRaw))
+	model.RulesJSON = NewJSONSubsetNullEquivalentValue(string(rulesRaw))
 
 	actionRaw, err := json.Marshal(found.Action)
 	if err != nil {
@@ -305,7 +305,7 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 		diags.AddError("Error marshalling logging", err.Error())
 		return nil
 	}
-	model.LoggingJSON = NewJSONNormalizedValue(string(loggingRaw))
+	model.LoggingJSON = NewJSONSubsetNullEquivalentValue(string(loggingRaw))
 
 	return nil
 }
@@ -357,7 +357,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["rules"] = rules
-	model.RulesJSON = NewJSONNormalizedValue(rulesJSON)
+	model.RulesJSON = NewJSONSubsetNullEquivalentValue(rulesJSON)
 
 	actionJSON, err := normalizeJSON(model.ActionJSON.ValueString())
 	if err != nil {
@@ -383,7 +383,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["logging"] = logging
-	model.LoggingJSON = NewJSONNormalizedValue(loggingJSON)
+	model.LoggingJSON = NewJSONSubsetNullEquivalentValue(loggingJSON)
 
 	return body
 }

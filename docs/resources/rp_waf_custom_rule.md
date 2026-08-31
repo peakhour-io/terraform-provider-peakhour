@@ -44,8 +44,8 @@ resource "peakhour_rp_waf_custom_rule" "example" {
 
 - `action_json` (String) Action as JSON object (WafAction). Server-side defaults are ignored for drift detection.
 - `domain` (String) Domain name.
-- `logging_json` (String) Logging as JSON object (WafLogging). Server-side defaults are ignored for drift detection.
-- `rules_json` (String) Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults are ignored for drift detection.
+- `logging_json` (String) Logging as JSON object (WafLogging). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.
+- `rules_json` (String) Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.
 
 ### Optional
 
