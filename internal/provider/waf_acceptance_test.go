@@ -116,6 +116,8 @@ func TestAccRPWAFCustomRule_basic(t *testing.T) {
 				Config: testAccRPWAFCustomRuleConfig(domain),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "domain", domain),
+					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "name", "Terraform acceptance rule"),
+					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "description", "tfacc custom rule"),
 					resource.TestCheckResourceAttr("peakhour_rp_waf_custom_rule.test", "enabled", "false"),
 					resource.TestCheckResourceAttrSet("peakhour_rp_waf_custom_rule.test", "uuid"),
 					resource.TestCheckResourceAttrSet("peakhour_rp_waf_custom_rule.test", "rule_id"),
@@ -147,6 +149,7 @@ provider "peakhour" {}
 resource "peakhour_rp_waf_custom_rule" "test" {
   domain = %q
 
+  name        = "Terraform acceptance rule"
   description = "tfacc custom rule"
   enabled     = false
 

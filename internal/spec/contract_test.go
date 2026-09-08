@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/peakhour-io/terraform-provider-peakhour/internal/client"
 	"github.com/peakhour-io/terraform-provider-peakhour/internal/provider"
 )
@@ -167,8 +168,20 @@ func TestRPWAFCustomRuleSchema_UsesStableAPIContract(t *testing.T) {
 	if _, ok := attrs["enabled"]; !ok {
 		t.Fatal("rp_waf_custom_rule schema missing enabled attribute")
 	}
-	if _, ok := attrs["name"]; ok {
-		t.Fatal("rp_waf_custom_rule schema must not expose unsupported name attribute")
+	if _, ok := attrs["name"]; !ok {
+		t.Fatal("rp_waf_custom_rule schema missing name attribute")
+	}
+	if _, ok := attrs["description"]; !ok {
+		t.Fatal("rp_waf_custom_rule schema missing description attribute")
+	}
+	for _, name := range []string{"name", "description"} {
+		attr, ok := attrs[name].(resourceschema.StringAttribute)
+		if !ok {
+			t.Fatalf("rp_waf_custom_rule %s attribute has unexpected type %T", name, attrs[name])
+		}
+		if !attr.Optional || attr.Computed {
+			t.Fatalf("rp_waf_custom_rule %s must be optional and managed, got Optional=%t Computed=%t", name, attr.Optional, attr.Computed)
+		}
 	}
 }
 

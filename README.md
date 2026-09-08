@@ -461,6 +461,7 @@ Manages a WAF custom rule for a domain.
 resource "peakhour_rp_waf_custom_rule" "example" {
   domain = "example.com"
 
+  name        = "Block suspicious clients"
   description = "Example custom rule (pass action)"
   enabled     = true
 
@@ -485,8 +486,9 @@ resource "peakhour_rp_waf_custom_rule" "example" {
 }
 ```
 
-The stable API does not persist custom-rule names. The provider manages
-`enabled` through the custom-rule toggle endpoint used by the Peakhour UI.
+Custom-rule names and descriptions are optional metadata. Existing unnamed
+rules remain supported. The provider manages `enabled` through the custom-rule
+toggle endpoint used by the Peakhour UI.
 
 See [examples/waf/main.tf](examples/waf/main.tf).
 

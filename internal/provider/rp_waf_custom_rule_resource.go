@@ -36,6 +36,7 @@ type RPWAFCustomRuleResourceModel struct {
 	RuleID  types.Int64  `tfsdk:"rule_id"`
 	Created types.String `tfsdk:"created"`
 
+	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 
@@ -85,12 +86,12 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"description": schema.StringAttribute{
-				Description: "Custom rule description. Set to null to clear.",
+				Description: "Optional custom rule description. Remove it from configuration to clear it.",
 				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+			},
+			"name": schema.StringAttribute{
+				Description: "Optional custom rule name. Remove it from configuration to clear it.",
+				Optional:    true,
 			},
 			"enabled": schema.BoolAttribute{
 				Description: "Whether the rule is enabled.",
@@ -276,6 +277,11 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 	} else {
 		model.Description = types.StringValue(*found.Description)
 	}
+	if found.Name == nil {
+		model.Name = types.StringNull()
+	} else {
+		model.Name = types.StringValue(*found.Name)
+	}
 	if found.Enabled == nil {
 		model.Enabled = types.BoolValue(false)
 	} else {
@@ -337,6 +343,14 @@ func (r *RPWAFCustomRuleResource) reconcileEnabled(domain, uuid string, desired 
 
 func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceModel, diags *diag.Diagnostics) map[string]any {
 	body := map[string]any{}
+
+	if !model.Name.IsUnknown() {
+		if model.Name.IsNull() {
+			body["name"] = nil
+		} else {
+			body["name"] = model.Name.ValueString()
+		}
+	}
 
 	if !model.Description.IsUnknown() {
 		if model.Description.IsNull() {

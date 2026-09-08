@@ -48,6 +48,7 @@ resource "peakhour_rp_waf_owasp_settings" "example" {
 resource "peakhour_rp_waf_custom_rule" "example" {
   domain = peakhour_domain.example.name
 
+  name        = "Block suspicious clients"
   description = "Example custom rule (pass action)"
   enabled     = true
 
