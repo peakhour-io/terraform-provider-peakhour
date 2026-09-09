@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,6 +15,85 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// The fake API follows stable's model_fields_set contract: absent metadata is
+// preserved and explicit null clears it (ReverseProxyHelper.update_custom_waf_rule).
+func TestAccRPWAFCustomRule_MetadataLifecycle(t *testing.T) {
+	const uuid = "11111111-1111-1111-1111-111111111111"
+	const endpoint = "/api/v1/domains/example.com/services/rp/waf/customrule"
+	const address = "peakhour_rp_waf_custom_rule.test"
+	var mutex sync.Mutex
+	response := testWAFCustomRuleResponse(uuid, true, nil)
+	var creates, patches int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mutex.Lock()
+		defer mutex.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == endpoint:
+			_ = json.NewEncoder(w).Encode([]any{response})
+		case (r.Method == http.MethodPut && r.URL.Path == endpoint) ||
+			(r.Method == http.MethodPatch && r.URL.Path == endpoint+"/"+uuid):
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode metadata request: %v", err)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			for _, key := range []string{"name", "description", "rules", "action", "logging"} {
+				if value, exists := body[key]; exists {
+					response[key] = value
+				}
+			}
+			if r.Method == http.MethodPut {
+				creates++
+				_ = json.NewEncoder(w).Encode(response)
+			} else {
+				patches++
+				w.WriteHeader(http.StatusNoContent)
+			}
+		case r.Method == http.MethodDelete && r.URL.Path == endpoint+"/"+uuid:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+	configureMockAcceptanceTest(t, server.URL)
+	initial := testUnitWAFCustomRuleConfig(true)
+	renamed := strings.ReplaceAll(initial, "Terraform custom rule", "Renamed rule")
+	renamed = strings.ReplaceAll(renamed, "Terraform managed rule", "Updated description")
+	omitted := strings.ReplaceAll(renamed, "  name         = \"Renamed rule\"\n", "")
+	omitted = strings.ReplaceAll(omitted, "  description  = \"Updated description\"\n", "")
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{Config: initial},
+			{ResourceName: address, ImportState: true, ImportStateVerify: true},
+			{Config: initial, PlanOnly: true},
+			{Config: renamed, Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr(address, "uuid", uuid),
+				resource.TestCheckResourceAttr(address, "name", "Renamed rule"),
+				resource.TestCheckResourceAttr(address, "description", "Updated description"),
+			)},
+			{Config: omitted, PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: omitted, Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckNoResourceAttr(address, "name"),
+				resource.TestCheckNoResourceAttr(address, "description"),
+			)},
+			{Config: omitted, PlanOnly: true},
+		},
+	})
+	mutex.Lock()
+	defer mutex.Unlock()
+	if creates != 1 || patches != 2 {
+		t.Fatalf("expected one create, rename and clear; got creates=%d patches=%d", creates, patches)
+	}
+	if response["name"] != nil || response["description"] != nil {
+		t.Fatalf("remote metadata was not cleared: %#v", response)
+	}
+}
 
 func TestRPWAFCustomRuleBuildBody_ManagesMetadata(t *testing.T) {
 	newModel := func() RPWAFCustomRuleResourceModel {

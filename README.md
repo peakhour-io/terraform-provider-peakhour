@@ -490,6 +490,19 @@ Custom-rule names and descriptions are optional metadata. Existing unnamed
 rules remain supported. The provider manages `enabled` through the custom-rule
 toggle endpoint used by the Peakhour UI.
 
+Terraform manages both metadata fields: removing either from configuration (or
+setting it to `null`) clears its remote value on apply. This differs from API
+PATCH omission, which preserves the remote value. When upgrading from a provider
+without `name`, or with the previous computed `description`, copy existing
+metadata into configuration before applying if you want to retain it. Review the
+plan for metadata removals.
+
+Import uses `domain/customrule/uuid`; names do not change rule identity or order.
+After import, use `terraform state show` to copy the existing `name`,
+`description`, and `enabled` into configuration, then check the plan. Renaming a
+rule updates it in place. The name and description do not replace
+`logging_json.message` or change the rule's matching/action behavior.
+
 See [examples/waf/main.tf](examples/waf/main.tf).
 
 ---

@@ -1,5 +1,6 @@
 resource "peakhour_rp_waf_custom_rule" "example" {
   domain      = "example.com"
+  name        = "Log curl clients"
   description = "Log curl user agents"
   enabled     = true
 
