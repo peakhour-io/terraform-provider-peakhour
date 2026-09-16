@@ -56,6 +56,10 @@ testacc:
 test-stable-contract:
 	scripts/verify-stable-json-contract.py "$${PEAKHOUR_WEBSITE_STABLE_PATH:-../peakhour-website-stable}"
 
+.PHONY: test-waf-defaults-contract
+test-waf-defaults-contract:
+	python3 scripts/verify-stable-json-contract.py --defaults "$${PEAKHOUR_WEBSITE_STABLE_PATH:-../peakhour-website-stable}"
+
 fmt:
 	go fmt ./...
 
@@ -72,6 +76,7 @@ lint: fmt vet
 	go mod tidy
 
 generate:
+	go generate ./internal/jsondefaults
 	terraform fmt -recursive examples/
 	cd tools && go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir .. --provider-name peakhour
 
@@ -132,6 +137,8 @@ beta-bundle: build-all
 	  cp "peakhour-tf-onboard_$${OS}_$${ARCH}$${EXT}" "$$BUNDLE_DIR/"; \
 	  sed "s/^\*\*Provider Version:\*\*.*/**Provider Version:** $$V (Beta)/" \
 	    BETA_TESTER_GUIDE.md > "$$BUNDLE_DIR/README.md"; \
+	  mkdir -p "$$BUNDLE_DIR/docs/guides"; \
+	  cp docs/guides/waf-json-defaults.md "$$BUNDLE_DIR/docs/guides/"; \
 	  rsync -a --exclude='.terraform' --exclude='.terraform.lock.hcl' \
 	    --exclude='terraform.tfstate*' --exclude='*.tfrc' \
 	    examples/ "$$BUNDLE_DIR/examples/"; \

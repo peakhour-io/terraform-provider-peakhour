@@ -2,6 +2,10 @@
 
 This guide explains how to install and use the Peakhour Terraform Provider from a binary (not yet in the public Terraform Registry).
 
+Before upgrading WAF custom rules, read the [JSON defaults upgrade guide](docs/guides/waf-json-defaults.md).
+Default-only differences are ignored, but omitted non-default remote values can
+now produce reset plans. Review those changes before applying.
+
 ## Prerequisites
 
 - Terraform v1.0+ installed
@@ -14,7 +18,7 @@ Place the `terraform-provider-peakhour` binary somewhere on your system (e.g., `
 
 ```bash
 mkdir -p /opt/peakhour
-cp terraform-provider-peakhour /opt/peakhour/
+cp terraform-provider-peakhour_* /opt/peakhour/terraform-provider-peakhour
 chmod +x /opt/peakhour/terraform-provider-peakhour
 ```
 

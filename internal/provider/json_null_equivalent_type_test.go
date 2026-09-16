@@ -243,9 +243,9 @@ func TestNullEquivalentJSONTypesAreScopedToApprovedAttributes(t *testing.T) {
 
 	var customRuleSchema resource.SchemaResponse
 	NewRPWAFCustomRuleResource().Schema(context.Background(), resource.SchemaRequest{}, &customRuleSchema)
-	assertStringCustomType[JSONSubsetNullEquivalentType](t, customRuleSchema, "rules_json")
-	assertStringCustomType[JSONNormalizedType](t, customRuleSchema, "action_json")
-	assertStringCustomType[JSONSubsetNullEquivalentType](t, customRuleSchema, "logging_json")
+	assertStringCustomType[JSONSchemaType](t, customRuleSchema, "rules_json")
+	assertStringCustomType[JSONSchemaType](t, customRuleSchema, "action_json")
+	assertStringCustomType[JSONSchemaType](t, customRuleSchema, "logging_json")
 
 	var owaspSchema resource.SchemaResponse
 	NewRPWAFOWASPSettingsResource().Schema(context.Background(), resource.SchemaRequest{}, &owaspSchema)

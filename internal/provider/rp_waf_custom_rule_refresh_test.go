@@ -98,9 +98,9 @@ func TestAccRPWAFCustomRule_MetadataLifecycle(t *testing.T) {
 func TestRPWAFCustomRuleBuildBody_ManagesMetadata(t *testing.T) {
 	newModel := func() RPWAFCustomRuleResourceModel {
 		return RPWAFCustomRuleResourceModel{
-			RulesJSON:   NewJSONSubsetNullEquivalentValue(`[]`),
-			ActionJSON:  NewJSONNormalizedValue(`{"action_name":"pass"}`),
-			LoggingJSON: NewJSONSubsetNullEquivalentValue(`{}`),
+			RulesJSON:   NewJSONSchemaValue("WafRules", `[]`),
+			ActionJSON:  NewJSONSchemaValue("WafAction", `{"action_name":"pass"}`),
+			LoggingJSON: NewJSONSchemaValue("WafLogging", `{}`),
 		}
 	}
 
@@ -295,7 +295,7 @@ func testWAFCustomRuleResponse(uuid string, enabled bool, name *string) map[stri
 		"uuid": uuid, "rule_id": 1, "created": "2026-07-22T00:00:00Z",
 		"name": name, "description": nil, "enabled": enabled,
 		"rules": []any{map[string]any{
-			"variable": "ARGS", "variable_part": nil, "variable_negated": false,
+			"variable": "ARGS", "variable_part": "", "variable_negated": false,
 			"variable_quote_type": nil, "variable_counter": false,
 			"operator": "@contains", "operator_arg": "bad", "operator_negated": false,
 			"transforms": []any{},

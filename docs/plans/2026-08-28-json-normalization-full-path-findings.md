@@ -2,6 +2,12 @@
 
 Date: 2026-08-28
 
+Update, 2026-09-16: the custom-rule comparison decisions below are superseded by
+[schema-driven WAF defaults](../guides/waf-json-defaults.md). Only declared defaults
+are equivalent to omission; explicit action null and empty string remain distinct.
+The exclusions and concerns for other resource types still apply. See the
+[implementation and validation report](2026-09-16-waf-json-defaults-results.md).
+
 ## Purpose
 
 This record defines where Terraform JSON equivalence is safe after tracing the

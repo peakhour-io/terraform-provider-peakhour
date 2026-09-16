@@ -20,6 +20,7 @@ import (
 var _ resource.Resource = &RPWAFCustomRuleResource{}
 var _ resource.ResourceWithConfigure = &RPWAFCustomRuleResource{}
 var _ resource.ResourceWithImportState = &RPWAFCustomRuleResource{}
+var _ resource.ResourceWithModifyPlan = &RPWAFCustomRuleResource{}
 
 func NewRPWAFCustomRuleResource() resource.Resource {
 	return &RPWAFCustomRuleResource{}
@@ -40,9 +41,9 @@ type RPWAFCustomRuleResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
 
-	RulesJSON   JSONSubsetNullEquivalentValue `tfsdk:"rules_json"`
-	ActionJSON  JSONNormalizedValue           `tfsdk:"action_json"`
-	LoggingJSON JSONSubsetNullEquivalentValue `tfsdk:"logging_json"`
+	RulesJSON   JSONSchemaValue `tfsdk:"rules_json"`
+	ActionJSON  JSONSchemaValue `tfsdk:"action_json"`
+	LoggingJSON JSONSchemaValue `tfsdk:"logging_json"`
 }
 
 func (r *RPWAFCustomRuleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -103,21 +104,45 @@ func (r *RPWAFCustomRuleResource) Schema(ctx context.Context, req resource.Schem
 				},
 			},
 			"rules_json": schema.StringAttribute{
-				Description: "Rules as JSON array (WafCustomRuleExpression[]). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.",
-				Required:    true,
-				CustomType:  JSONSubsetNullEquivalentType{},
+				Description:   "Rules as JSON array (WafCustomRuleExpression[]). Omitted properties use documented API defaults for comparison; non-default values and array order remain significant.",
+				Required:      true,
+				CustomType:    JSONSchemaType{SchemaName: "WafRules"},
+				PlanModifiers: []planmodifier.String{jsonDefaultsPlanModifier{schemaName: "WafRules"}},
 			},
 			"action_json": schema.StringAttribute{
-				Description: "Action as JSON object (WafAction). Server-side defaults are ignored for drift detection.",
-				Required:    true,
-				CustomType:  JSONNormalizedType{},
+				Description:   "Action as JSON object (WafAction). Omitted properties use documented API defaults for comparison; explicit null is distinct from an empty string.",
+				Required:      true,
+				CustomType:    JSONSchemaType{SchemaName: "WafAction"},
+				PlanModifiers: []planmodifier.String{jsonDefaultsPlanModifier{schemaName: "WafAction"}},
 			},
 			"logging_json": schema.StringAttribute{
-				Description: "Logging as JSON object (WafLogging). Server-side defaults and null-valued object properties are ignored for drift detection; null array elements remain significant.",
-				Required:    true,
-				CustomType:  JSONSubsetNullEquivalentType{},
+				Description:   "Logging as JSON object (WafLogging). Omitted properties use documented API defaults for comparison; non-default values remain significant.",
+				Required:      true,
+				CustomType:    JSONSchemaType{SchemaName: "WafLogging"},
+				PlanModifiers: []planmodifier.String{jsonDefaultsPlanModifier{schemaName: "WafLogging"}},
 			},
 		},
+	}
+}
+
+// ModifyPlan restores rule_id only for a complete no-op after the JSON plan
+// modifiers ran. Real updates leave it unknown: the separate ordering resource
+// can renumber rules between planning and the post-update read.
+func (r *RPWAFCustomRuleResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
+	var plan, state RPWAFCustomRuleResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if plan.Domain.Equal(state.Domain) && plan.Name.Equal(state.Name) &&
+		plan.Description.Equal(state.Description) && plan.Enabled.Equal(state.Enabled) &&
+		plan.RulesJSON.Equal(state.RulesJSON) && plan.ActionJSON.Equal(state.ActionJSON) &&
+		plan.LoggingJSON.Equal(state.LoggingJSON) {
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("rule_id"), state.RuleID)...)
 	}
 }
 
@@ -297,21 +322,21 @@ func (r *RPWAFCustomRuleResource) read(ctx context.Context, model *RPWAFCustomRu
 		diags.AddError("Error marshalling rules", err.Error())
 		return nil
 	}
-	model.RulesJSON = NewJSONSubsetNullEquivalentValue(string(rulesRaw))
+	model.RulesJSON = NewJSONSchemaValue("WafRules", string(rulesRaw))
 
 	actionRaw, err := json.Marshal(found.Action)
 	if err != nil {
 		diags.AddError("Error marshalling action", err.Error())
 		return nil
 	}
-	model.ActionJSON = NewJSONNormalizedValue(string(actionRaw))
+	model.ActionJSON = NewJSONSchemaValue("WafAction", string(actionRaw))
 
 	loggingRaw, err := json.Marshal(found.Logging)
 	if err != nil {
 		diags.AddError("Error marshalling logging", err.Error())
 		return nil
 	}
-	model.LoggingJSON = NewJSONSubsetNullEquivalentValue(string(loggingRaw))
+	model.LoggingJSON = NewJSONSchemaValue("WafLogging", string(loggingRaw))
 
 	return nil
 }
@@ -371,7 +396,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["rules"] = rules
-	model.RulesJSON = NewJSONSubsetNullEquivalentValue(rulesJSON)
+	model.RulesJSON = NewJSONSchemaValue("WafRules", rulesJSON)
 
 	actionJSON, err := normalizeJSON(model.ActionJSON.ValueString())
 	if err != nil {
@@ -384,7 +409,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["action"] = action
-	model.ActionJSON = NewJSONNormalizedValue(actionJSON)
+	model.ActionJSON = NewJSONSchemaValue("WafAction", actionJSON)
 
 	loggingJSON, err := normalizeJSON(model.LoggingJSON.ValueString())
 	if err != nil {
@@ -397,7 +422,7 @@ func (r *RPWAFCustomRuleResource) buildRuleBody(model *RPWAFCustomRuleResourceMo
 		return nil
 	}
 	body["logging"] = logging
-	model.LoggingJSON = NewJSONSubsetNullEquivalentValue(loggingJSON)
+	model.LoggingJSON = NewJSONSchemaValue("WafLogging", loggingJSON)
 
 	return body
 }

@@ -265,6 +265,52 @@ def verify_waf_custom_rules(stable_root: Path, revision: str) -> None:
     require_keyword(calls[0], "exclude_none", True, "set_owasp_settings")
 
 
+def verify_schema_defaults(tree: ast.Module, schemas: dict) -> None:
+    """Compare all declared WAF defaults, not a hand-maintained field list."""
+    for name in ("WafCustomRuleExpression", "WafAction", "WafLogging"):
+        definition = find_definition(tree, ast.ClassDef, name)
+        fields = {
+            node.target.id: node.value
+            for node in definition.body
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+        }
+        properties = schemas[name]["properties"]
+        if fields.keys() != properties.keys():
+            fail(f"{name} fields differ between API source and schema")
+        for field, default in fields.items():
+            declared = properties[field]
+            if (default is not None) != ("default" in declared):
+                fail(f"{name}.{field} default presence changed")
+            if default is None:
+                continue
+            try:
+                value = ast.literal_eval(default)
+            except (ValueError, TypeError):
+                fail(f"{name}.{field} has a dynamic default requiring explicit review")
+            if json.dumps(value, sort_keys=True) != json.dumps(declared["default"], sort_keys=True):
+                fail(f"{name}.{field} default differs between API source and schema")
+
+
+def verify_defaults_contract(stable_root: Path, revision: str) -> None:
+    """Check schema defaults and their use in full JSON persistence at a revision."""
+    source = parse_source(stable_root, revision, "peakhour/reverseproxy/waf/api/schemas.py")
+    spec = json.loads((PROVIDER_ROOT / "docs/spec/peakhour-api-v1.json").read_text())
+    verify_schema_defaults(source, spec["components"]["schemas"])
+    helpers = parse_source(stable_root, revision, "peakhour/reverseproxy/helpers.py")
+    create = find_definition(helpers, ast.FunctionDef, "add_custom_waf_rule")
+    update = find_definition(helpers, ast.FunctionDef, "update_custom_waf_rule")
+    for fields in (constructor_model_dump_fields(create, "WafCustomRule"), assigned_model_dump_fields(update)):
+        for name in ("rules", "action", "logging"):
+            if name not in fields:
+                fail(f"WAF persistence no longer serializes {name}")
+            call = fields[name]
+            require_keyword(call, "mode", "json", f"WAF persistence {name}")
+            # Omission must expand defaults, and explicit null must survive.
+            for keyword in call.keywords:
+                if keyword.arg != "mode":
+                    fail(f"WAF persistence {name} has unreviewed model_dump option {keyword.arg}")
+
+
 def verify_image_transform_exclusion(stable_root: Path, revision: str) -> None:
     schemas = parse_source(
         stable_root,
@@ -304,6 +350,23 @@ def expect_contract_failure(check: object, description: str) -> None:
 
 
 def self_test() -> None:
+    # Defaults contract mutations: detect changed values, missing defaults,
+    # newly added fields, and bool/number distinctions.
+    minimal = ast.parse("\n".join(
+        f"class {name}:\n    value: bool = False"
+        for name in ("WafCustomRuleExpression", "WafAction", "WafLogging")
+    ))
+    names = ("WafCustomRuleExpression", "WafAction", "WafLogging")
+    valid = {name: {"properties": {"value": {"default": False}}} for name in names}
+    verify_schema_defaults(minimal, valid)
+    for property_schema in ({"default": True}, {}, {"default": 0}):
+        mutated = json.loads(json.dumps(valid))
+        mutated["WafAction"]["properties"]["value"] = property_schema
+        expect_contract_failure(lambda: verify_schema_defaults(minimal, mutated), "schema default changed")
+    mutated = json.loads(json.dumps(valid))
+    mutated["WafAction"]["properties"]["new_field"] = {"default": None}
+    expect_contract_failure(lambda: verify_schema_defaults(minimal, mutated), "schema field added")
+
     valid_schema = ast.parse(
         """
 class FirewallAction:
@@ -360,6 +423,14 @@ Action = Annotated[Union[FirewallAction, OtherAction], Field(discriminator="type
 
 def main(arguments: Iterable[str]) -> int:
     args = list(arguments)
+    if args and args[0] == "--defaults":
+        if len(args) > 3:
+            fail("usage: --defaults [PEAKHOUR_WEBSITE_STABLE_PATH [REVISION]]")
+        root = Path(args[1] if len(args) > 1 else PROVIDER_ROOT.parent / "peakhour-website-stable").resolve()
+        revision = args[2] if len(args) > 2 else git_head(root)
+        verify_defaults_contract(root, revision)
+        print(f"WAF schema defaults and persistence source verified at {revision}")
+        return 0
     if args == ["--self-test"]:
         self_test()
         print("stable JSON contract verifier self-test passed")
